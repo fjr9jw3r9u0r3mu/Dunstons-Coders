@@ -28,29 +28,22 @@ body,html{height:100%;margin:0;background:var(--bg);color:var(--text);font-famil
 .resizer-bar:hover, .resizer-bar.active{background:var(--accent)}
 .resizer-bar.hidden{display:none}
 
-.preview-pane{flex:1; display:flex; flex-direction:column; background:#fff; position:relative; min-width:0; z-index:5}
+.preview-pane{flex:1; display:flex; flex-direction:column; background:#000; position:relative; min-width:0; z-index:5}
 .preview-pane.full-mode { position:fixed !important; inset:0 !important; z-index:5000 !important; width:100% !important; height:100% !important; }
 
 iframe{flex:1; width:100%; border:none; background:#fff; display:block}
-
-/* Terminal Console UI */
-.console-wrapper{background:#000; display:flex; flex-direction:column; transition:0.3s; border-top:2px solid var(--border); z-index:1000; position:relative}
-.console-wrapper.maximized{height:35%; min-height:150px}
-.console-wrapper.minimized{height:40px}
-.console-header{height:40px; background:#0f1418; display:flex; justify-content:space-between; align-items:center; padding:0 15px; cursor:pointer; flex-shrink:0}
-#langOutput{flex:1; padding:15px; font-family:'Consolas', monospace; color:var(--accent); overflow-y:auto; white-space:pre-wrap; font-size:13px; background:#000}
+#langOutput{flex:1; padding:25px; font-family:'Consolas', monospace; color:var(--accent); overflow-y:auto; white-space:pre-wrap; font-size:14px; background:#000; display:none}
 
 .proj-item{padding:12px; background:#161b22; margin:5px 10px; border-radius:8px; cursor:pointer; font-size:12px; display:flex; justify-content:space-between; align-items:center; border:1px solid transparent; transition:0.2s}
-.proj-item:hover{background:#1c2128}
 .proj-item.active{border-color:var(--accent); background:rgba(0,255,65,0.05)}
 .del-btn{color:#ff4d4d; padding:5px; opacity:0.5; transition:0.2s}
 .del-btn:hover{opacity:1; transform:scale(1.1)}
 
-#showEditorBtn{display:none; position:fixed; bottom:60px; left:20px; z-index:2000; background:var(--accent); color:#000; padding:12px 24px; border-radius:50px; font-weight:800; cursor:pointer; border:none; box-shadow:0 10px 20px rgba(0,0,0,0.5)}
+#showEditorBtn{display:none; position:fixed; bottom:60px; left:20px; z-index:2000; background:var(--accent); color:#000; padding:12px 24px; border-radius:50px; font-weight:800; cursor:pointer; border:none}
 .modal{display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:9999; place-items:center; backdrop-filter:blur(8px)}
 .modal-content{background:var(--panel); padding:40px; border:1px solid var(--border); width:90%; max-width:500px; border-radius:20px; text-align:center}
 
-#lockScreen{display:none; position:fixed; inset:0; background:#000; z-index:99999; place-items:center; text-align:center}
+#lockScreen{display:none; position:fixed; inset:0; background:#000; z-index:99999; place-items:center}
 select{background:#1a2025; color:var(--accent); border:1px solid var(--border); padding:6px; border-radius:6px; font-weight:bold; cursor:pointer}
 </style>
 </head>
@@ -59,8 +52,8 @@ select{background:#1a2025; color:var(--accent); border:1px solid var(--border); 
 <div id="lockScreen">
     <div class="modal-content" style="background:#0a0a0a">
         <div class="logo">DUNSTONS-CODER</div>
-        <input type="password" id="passInput" placeholder="Passkey" style="width:100%; padding:15px; background:#000; border:1px solid var(--border); color:white; margin-bottom:15px; border-radius:8px; text-align:center; font-size:18px">
-        <button class="btn" style="width:100%; justify-content:center; background:var(--accent); color:#000; padding:15px" onclick="unlock()">DECRYPT & ENTER</button>
+        <input type="password" id="passInput" placeholder="Passkey" style="width:100%; padding:15px; background:#000; border:1px solid var(--border); color:white; margin-bottom:15px; border-radius:8px; text-align:center">
+        <button class="btn" style="width:100%; justify-content:center; background:var(--accent); color:#000" onclick="unlock()">ACCESS</button>
     </div>
 </div>
 
@@ -77,7 +70,7 @@ select{background:#1a2025; color:var(--accent); border:1px solid var(--border); 
         </select>
     </div>
     <div style="display:flex; gap:10px; align-items:center">
-        <button class="btn" onclick="toggleFullScreen()"><i class="fa-solid fa-expand"></i> FULL PREVIEW</button>
+        <button class="btn" onclick="toggleFullScreen()"><i class="fa-solid fa-expand"></i> FULL</button>
         <button class="btn" onclick="toggleEditor()"><i class="fa-solid fa-code"></i> EDITOR</button>
         <button class="btn" onclick="openAbout()">MISSION</button>
         <button class="btn" style="background:var(--accent); color:#000" onclick="runCode()">RUN ▶</button>
@@ -86,9 +79,8 @@ select{background:#1a2025; color:var(--accent); border:1px solid var(--border); 
 
 <div class="app-body">
     <aside class="sidebar" id="sidebar">
-        <div style="padding:15px; font-size:10px; opacity:0.4; letter-spacing:1px">SAVED PROJECTS</div>
-        <div id="projectList" style="flex:1; overflow-y:auto"></div>
-        <button class="btn" style="margin:15px" onclick="createNewProject()"><i class="fa-solid fa-plus"></i> NEW PROJECT</button>
+        <div id="projectList" style="flex:1; overflow-y:auto; margin-top:10px"></div>
+        <button class="btn" style="margin:15px" onclick="createNewProject()">+ NEW PROJECT</button>
     </aside>
 
     <section class="editor-container" id="editorSection">
@@ -99,13 +91,7 @@ select{background:#1a2025; color:var(--accent); border:1px solid var(--border); 
 
     <section class="preview-pane" id="previewPane">
         <iframe id="outputFrame"></iframe>
-        <div class="console-wrapper minimized" id="consolePane">
-            <div class="console-header" onclick="toggleConsole()">
-                <span style="font-size:11px; font-weight:bold; color:var(--accent)"><i class="fa-solid fa-terminal"></i> OUTPUT TERMINAL</span>
-                <i id="minIcon" class="fa-solid fa-chevron-up"></i>
-            </div>
-            <div id="langOutput"></div>
-        </div>
+        <div id="langOutput"></div>
     </section>
 </div>
 
@@ -113,13 +99,9 @@ select{background:#1a2025; color:var(--accent); border:1px solid var(--border); 
 
 <div class="modal" id="aboutModal">
     <div class="modal-content">
-        <h2 style="margin:0">Dunston Jude Bandasa</h2>
-        <p style="color:var(--accent); font-weight:bold; margin:5px 0">Form 3 Student | Sabah, Malaysia</p>
-        <div style="text-align:left; background:rgba(0,0,0,0.4); padding:20px; border-radius:12px; border-left:4px solid var(--accent); margin:25px 0; font-size:14px; line-height:1.6">
-            <p><strong>The Mission:</strong> Providing a free, high-performance coding environment for everyone globally with zero limits.</p>
-            <p><strong>Sabah Vision:</strong> Empowering local students to master tech from home.</p>
-        </div>
-        <button class="btn" style="width:100%; justify-content:center; background:var(--accent); color:#000; padding:12px" onclick="closeAbout()">CONTINUE</button>
+        <h2>Dunston Jude Bandasa</h2>
+        <p>Providing a free coding environment for everyone globally.</p>
+        <button class="btn" style="width:100%; justify-content:center; background:var(--accent); color:#000" onclick="closeAbout()">START</button>
     </div>
 </div>
 
@@ -152,18 +134,12 @@ async function runCode() {
     const frame = document.getElementById('outputFrame');
     const langDiv = document.getElementById('langOutput');
     
-    // Clear previous results
-    langDiv.textContent = ""; 
-    
     if(lang === 'html') {
-        langDiv.style.display = 'none'; 
-        frame.style.display = 'block';
+        langDiv.style.display = 'none'; frame.style.display = 'block';
         frame.srcdoc = code;
     } else {
-        frame.style.display = 'none'; 
-        langDiv.style.display = 'block';
-        if(document.getElementById('consolePane').classList.contains('minimized')) toggleConsole();
-        langDiv.textContent = '> Initializing Engine...\n> Running...';
+        frame.style.display = 'none'; langDiv.style.display = 'block';
+        langDiv.textContent = '> Running...';
         try {
             const res = await fetch('https://emkc.org/api/v2/piston/execute', {
                 method: 'POST',
@@ -171,51 +147,36 @@ async function runCode() {
                 body: JSON.stringify({language: lang, version: '*', files: [{name: lang==='java'?'Main.java':'script', content: code}]})
             });
             const data = await res.json();
-            langDiv.textContent = (data.run && (data.run.output || data.run.stderr)) || "Process exited with no output.";
-        } catch(e) { langDiv.textContent = 'Network Error: ' + e.message; }
+            langDiv.textContent = (data.run && (data.run.output || data.run.stderr)) || "Process exited.";
+        } catch(e) { langDiv.textContent = 'Error: ' + e.message; }
     }
 }
 
-// DELETE PROJECT FUNCTION
 function deleteProject(name, event) {
     event.stopPropagation();
-    if (Object.keys(projects).length <= 1) return alert("Cannot delete the only project.");
-    if (confirm(`Delete project "${name}"?`)) {
+    if (Object.keys(projects).length <= 1) return alert("Min 1 project required.");
+    if (confirm(`Delete ${name}?`)) {
         delete projects[name];
-        if (activeProj === name) {
-            activeProj = Object.keys(projects)[0];
-            localStorage.setItem('DC_LastProj', activeProj);
-            editor.setValue(projects[activeProj].code);
-        }
+        if (activeProj === name) activeProj = Object.keys(projects)[0];
         localStorage.setItem('DC_Storage_V5', JSON.stringify(projects));
         renderProjects();
     }
 }
 
-function toggleFullScreen() { document.getElementById('previewPane').classList.add('full-mode'); }
+function toggleFullScreen() { document.getElementById('previewPane').classList.toggle('full-mode'); }
 window.addEventListener('keydown', (e) => { if(e.key === 'Escape') document.getElementById('previewPane').classList.remove('full-mode'); });
 
 function toggleEditor() {
     const section = document.getElementById('editorSection');
     const resizer = document.getElementById('resizer');
-    const showBtn = document.getElementById('showEditorBtn');
     section.classList.toggle('hidden');
     resizer.classList.toggle('hidden');
-    showBtn.style.display = section.classList.contains('hidden') ? 'block' : 'none';
+    document.getElementById('showEditorBtn').style.display = section.classList.contains('hidden') ? 'block' : 'none';
     if(editor) setTimeout(() => editor.layout(), 200);
-}
-
-function toggleConsole() {
-    const pane = document.getElementById('consolePane');
-    const icon = document.getElementById('minIcon');
-    pane.classList.toggle('maximized');
-    pane.classList.toggle('minimized');
-    icon.className = pane.classList.contains('maximized') ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up';
 }
 
 const resizer = document.getElementById('resizer');
 resizer.addEventListener('mousedown', (e) => {
-    resizer.classList.add('active');
     const onMove = (e) => {
         let p = (e.clientX / window.innerWidth) * 100;
         if(p > 15 && p < 85) {
@@ -224,7 +185,6 @@ resizer.addEventListener('mousedown', (e) => {
         }
     };
     const onUp = () => {
-        resizer.classList.remove('active');
         window.removeEventListener('mousemove', onMove);
         window.removeEventListener('mouseup', onUp);
     };
@@ -254,7 +214,6 @@ function renderProjects() {
                         <i class="fa-solid fa-trash del-btn" onclick="deleteProject('${name}', event)"></i>`;
         div.onclick = () => {
             activeProj = name;
-            localStorage.setItem('DC_LastProj', name);
             editor.setValue(projects[name].code);
             document.getElementById('langSelect').value = projects[name].lang;
             monaco.editor.setModelLanguage(editor.getModel(), projects[name].lang);
@@ -265,7 +224,7 @@ function renderProjects() {
     });
 }
 function createNewProject() {
-    const n = prompt("Project Name:");
+    const n = prompt("Name:");
     if(n) { projects[n] = {code: '', lang: 'html'}; renderProjects(); }
 }
 </script>

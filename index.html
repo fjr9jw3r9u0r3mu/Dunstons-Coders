@@ -18,7 +18,7 @@ body,html{height:100%;margin:0;background:var(--bg);color:var(--text);font-famil
     left: 0 !important; 
     width: 100vw !important; 
     height: 100vh !important; 
-    z-index: 999999 !important; /* Higher than header (100) */
+    z-index: 999999 !important; 
     background: #000;
 }
 
@@ -26,6 +26,7 @@ body,html{height:100%;margin:0;background:var(--bg);color:var(--text);font-famil
 .logo{color:var(--accent);font-weight:900;font-size:18px;letter-spacing:1.5px}
 .btn{background:#1a2025;color:var(--text);border:1px solid var(--border);padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;display:flex;align-items:center;gap:8px;transition:0.2s}
 .btn:hover{border-color:var(--accent);background:#252b32}
+.btn.active{background:var(--accent); color:#000}
 
 .app-body{flex:1;display:flex;min-height:0;position:relative;z-index:1}
 .sidebar{width:250px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:0.3s;z-index:10;flex-shrink:0}
@@ -46,6 +47,10 @@ iframe{flex:1; width:100%; height:100%; border:none; background:#fff; display:bl
 .proj-item.active{border-color:var(--accent); background:rgba(0,255,65,0.05)}
 .del-btn{color:#ff4d4d; padding:5px; opacity:0.5; transition:0.2s}
 .del-btn:hover{opacity:1; transform:scale(1.1)}
+
+/* Mission Modal Styling */
+.modal{display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:9999999; place-items:center; backdrop-filter:blur(8px)}
+.modal-content{background:var(--panel); padding:40px; border:1px solid var(--border); width:90%; max-width:500px; border-radius:20px; text-align:center}
 
 #showEditorBtn{display:none; position:fixed; bottom:60px; left:20px; z-index:2000; background:var(--accent); color:#000; padding:12px 24px; border-radius:50px; font-weight:800; cursor:pointer; border:none}
 select{background:#1a2025; color:var(--accent); border:1px solid var(--border); padding:6px; border-radius:6px; font-weight:bold; cursor:pointer}
@@ -82,6 +87,7 @@ select{background:#1a2025; color:var(--accent); border:1px solid var(--border); 
         <button class="btn" onclick="downloadCode()"><i class="fa-solid fa-download"></i> SAVE</button>
         <button class="btn" onclick="toggleFullScreen()"><i class="fa-solid fa-expand"></i> FULL</button>
         <button class="btn" onclick="toggleEditor()"><i class="fa-solid fa-code"></i> EDITOR</button>
+        <button class="btn" onclick="openAbout()">MISSION</button>
         <button class="btn" style="background:var(--accent); color:#000" onclick="runCode()">RUN ▶</button>
     </div>
 </header>
@@ -100,6 +106,18 @@ select{background:#1a2025; color:var(--accent); border:1px solid var(--border); 
 </div>
 
 <button id="showEditorBtn" onclick="toggleEditor()">SHOW EDITOR</button>
+
+<div class="modal" id="aboutModal">
+    <div class="modal-content">
+        <h2 style="margin:0">Dunston Jude Bandasa</h2>
+        <p style="color:var(--accent); font-weight:bold; margin:5px 0">Founder | Sabah, Malaysia</p>
+        <div style="text-align:left; background:rgba(0,0,0,0.4); padding:20px; border-radius:12px; border-left:4px solid var(--accent); margin:25px 0; font-size:14px; line-height:1.6">
+            <p><strong>The Mission:</strong> Providing a free, high-performance coding environment for everyone globally with zero limits.</p>
+            <p><strong>Vision:</strong> Empowering students to master technology and software engineering from anywhere in the world.</p>
+        </div>
+        <button class="btn" style="width:100%; justify-content:center; background:var(--accent); color:#000; padding:12px" onclick="closeAbout()">CONTINUE</button>
+    </div>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
 <script>
@@ -133,17 +151,8 @@ require(['vs/editor/editor.main'], function() {
     renderProjects();
 });
 
-function toggleFullScreen() {
-    const pane = document.getElementById('previewPane');
-    pane.classList.toggle('full-mode');
-}
-
-// Global ESC Key Listener
-window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        document.getElementById('previewPane').classList.remove('full-mode');
-    }
-});
+function toggleFullScreen() { document.getElementById('previewPane').classList.toggle('full-mode'); }
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.getElementById('previewPane').classList.remove('full-mode'); });
 
 function toggleAutoRun() {
     autoRunEnabled = !autoRunEnabled;
@@ -187,6 +196,8 @@ function downloadCode() {
 }
 
 function unlock() { if(document.getElementById('passInput').value === PASSKEY) document.getElementById('lockScreen').style.display = 'none'; }
+function openAbout() { document.getElementById('aboutModal').style.display = 'grid'; }
+function closeAbout() { document.getElementById('aboutModal').style.display = 'none'; }
 
 function toggleEditor() {
     const section = document.getElementById('editorSection');

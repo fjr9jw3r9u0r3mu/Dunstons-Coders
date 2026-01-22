@@ -11,10 +11,6 @@
 *{box-sizing:border-box; outline:none;}
 body,html{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:system-ui;overflow:hidden;display:flex;flex-direction:column}
 
-/* Z-INDEX HIERARCHY: 
-   1: App Body | 10: Sidebar | 20: Resizer | 100: Header 
-   1000: Console | 5000: FullScreen | 9999: Modals | 99999: Lock */
-
 .header{height:60px;background:rgba(13,17,23,0.95);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:space-between;padding:0 25px;border-bottom:1px solid var(--border);z-index:100}
 .logo{color:var(--accent);font-weight:900;font-size:18px;letter-spacing:1.5px}
 .btn{background:#1a2025;color:var(--text);border:1px solid var(--border);padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;display:flex;align-items:center;gap:8px;transition:0.2s}
@@ -24,7 +20,6 @@ body,html{height:100%;margin:0;background:var(--bg);color:var(--text);font-famil
 .sidebar{width:250px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:0.3s;z-index:10;flex-shrink:0}
 .sidebar.minimized{width:0;opacity:0;pointer-events:none}
 
-/* Fix Editor/Preview Ratios */
 .editor-container{width:50%; display:flex; flex-direction:column; background:var(--vs-bg); transition:width 0.1s ease; overflow:hidden; z-index:5}
 .editor-container.hidden{width:0 !important; border:none}
 #monaco-container{flex:1; width:100%}
@@ -33,25 +28,24 @@ body,html{height:100%;margin:0;background:var(--bg);color:var(--text);font-famil
 .resizer-bar:hover, .resizer-bar.active{background:var(--accent)}
 .resizer-bar.hidden{display:none}
 
-/* Right Side Stack */
 .preview-pane{flex:1; display:flex; flex-direction:column; background:#fff; position:relative; min-width:0; z-index:5}
 .preview-pane.full-mode { position:fixed !important; inset:0 !important; z-index:5000 !important; width:100% !important; height:100% !important; }
 
 iframe{flex:1; width:100%; border:none; background:#fff; display:block}
 
-/* Fixed Console Layering */
+/* Terminal Console UI */
 .console-wrapper{background:#000; display:flex; flex-direction:column; transition:0.3s; border-top:2px solid var(--border); z-index:1000; position:relative}
-.console-wrapper.maximized{height:30%; min-height:150px}
+.console-wrapper.maximized{height:35%; min-height:150px}
 .console-wrapper.minimized{height:40px}
 .console-header{height:40px; background:#0f1418; display:flex; justify-content:space-between; align-items:center; padding:0 15px; cursor:pointer; flex-shrink:0}
 #langOutput{flex:1; padding:15px; font-family:'Consolas', monospace; color:var(--accent); overflow-y:auto; white-space:pre-wrap; font-size:13px; background:#000}
 
-/* Project Items */
-.proj-item{padding:12px; background:#161b22; margin:5px 10px; border-radius:8px; cursor:pointer; font-size:12px; display:flex; justify-content:space-between; border:1px solid transparent; transition:0.2s}
+.proj-item{padding:12px; background:#161b22; margin:5px 10px; border-radius:8px; cursor:pointer; font-size:12px; display:flex; justify-content:space-between; align-items:center; border:1px solid transparent; transition:0.2s}
 .proj-item:hover{background:#1c2128}
 .proj-item.active{border-color:var(--accent); background:rgba(0,255,65,0.05)}
+.del-btn{color:#ff4d4d; padding:5px; opacity:0.5; transition:0.2s}
+.del-btn:hover{opacity:1; transform:scale(1.1)}
 
-/* Overlays */
 #showEditorBtn{display:none; position:fixed; bottom:60px; left:20px; z-index:2000; background:var(--accent); color:#000; padding:12px 24px; border-radius:50px; font-weight:800; cursor:pointer; border:none; box-shadow:0 10px 20px rgba(0,0,0,0.5)}
 .modal{display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:9999; place-items:center; backdrop-filter:blur(8px)}
 .modal-content{background:var(--panel); padding:40px; border:1px solid var(--border); width:90%; max-width:500px; border-radius:20px; text-align:center}
@@ -65,7 +59,6 @@ select{background:#1a2025; color:var(--accent); border:1px solid var(--border); 
 <div id="lockScreen">
     <div class="modal-content" style="background:#0a0a0a">
         <div class="logo">DUNSTONS-CODER</div>
-        <p style="opacity:0.5; font-size:11px; margin-bottom:20px">ENCRYPTED ACCESS ONLY</p>
         <input type="password" id="passInput" placeholder="Passkey" style="width:100%; padding:15px; background:#000; border:1px solid var(--border); color:white; margin-bottom:15px; border-radius:8px; text-align:center; font-size:18px">
         <button class="btn" style="width:100%; justify-content:center; background:var(--accent); color:#000; padding:15px" onclick="unlock()">DECRYPT & ENTER</button>
     </div>
@@ -76,7 +69,7 @@ select{background:#1a2025; color:var(--accent); border:1px solid var(--border); 
         <div class="logo">DUNSTONS-CODER</div>
         <button class="btn" onclick="toggleSidebar()"><i class="fa-solid fa-folder-tree"></i></button>
         <select id="langSelect" onchange="changeLang()">
-            <option value="html">WEB ENGINE</option>
+            <option value="html">WEB PREVIEW</option>
             <option value="python">PYTHON 3</option>
             <option value="lua">LUA</option>
             <option value="java">JAVA</option>
@@ -159,11 +152,16 @@ async function runCode() {
     const frame = document.getElementById('outputFrame');
     const langDiv = document.getElementById('langOutput');
     
+    // Clear previous results
+    langDiv.textContent = ""; 
+    
     if(lang === 'html') {
-        langDiv.style.display = 'none'; frame.style.display = 'block';
+        langDiv.style.display = 'none'; 
+        frame.style.display = 'block';
         frame.srcdoc = code;
     } else {
-        frame.style.display = 'none'; langDiv.style.display = 'block';
+        frame.style.display = 'none'; 
+        langDiv.style.display = 'block';
         if(document.getElementById('consolePane').classList.contains('minimized')) toggleConsole();
         langDiv.textContent = '> Initializing Engine...\n> Running...';
         try {
@@ -178,13 +176,24 @@ async function runCode() {
     }
 }
 
-// GUI & RATIO LOGIC
-function toggleFullScreen() { document.getElementById('previewPane').classList.add('full-mode'); }
-window.addEventListener('keydown', (e) => { 
-    if(e.key === 'Escape') {
-        document.getElementById('previewPane').classList.remove('full-mode'); 
+// DELETE PROJECT FUNCTION
+function deleteProject(name, event) {
+    event.stopPropagation();
+    if (Object.keys(projects).length <= 1) return alert("Cannot delete the only project.");
+    if (confirm(`Delete project "${name}"?`)) {
+        delete projects[name];
+        if (activeProj === name) {
+            activeProj = Object.keys(projects)[0];
+            localStorage.setItem('DC_LastProj', activeProj);
+            editor.setValue(projects[activeProj].code);
+        }
+        localStorage.setItem('DC_Storage_V5', JSON.stringify(projects));
+        renderProjects();
     }
-});
+}
+
+function toggleFullScreen() { document.getElementById('previewPane').classList.add('full-mode'); }
+window.addEventListener('keydown', (e) => { if(e.key === 'Escape') document.getElementById('previewPane').classList.remove('full-mode'); });
 
 function toggleEditor() {
     const section = document.getElementById('editorSection');
@@ -223,7 +232,6 @@ resizer.addEventListener('mousedown', (e) => {
     window.addEventListener('mouseup', onUp);
 });
 
-// SYSTEM LOGIC
 function toggleSidebar() { document.getElementById('sidebar').classList.toggle('minimized'); }
 function unlock() { if(document.getElementById('passInput').value === PASSKEY) document.getElementById('lockScreen').style.display = 'none'; }
 function openAbout() { document.getElementById('aboutModal').style.display = 'grid'; }
@@ -233,14 +241,17 @@ function changeLang() {
     monaco.editor.setModelLanguage(editor.getModel(), l);
     projects[activeProj].lang = l;
     localStorage.setItem('DC_Storage_V5', JSON.stringify(projects));
+    runCode();
 }
+
 function renderProjects() {
     const list = document.getElementById('projectList');
     list.innerHTML = '';
     Object.keys(projects).forEach(name => {
         const div = document.createElement('div');
         div.className = `proj-item ${name === activeProj ? 'active' : ''}`;
-        div.innerHTML = `<span><i class="fa-solid fa-code"></i> ${name}</span>`;
+        div.innerHTML = `<span><i class="fa-solid fa-code"></i> ${name}</span>
+                        <i class="fa-solid fa-trash del-btn" onclick="deleteProject('${name}', event)"></i>`;
         div.onclick = () => {
             activeProj = name;
             localStorage.setItem('DC_LastProj', name);
@@ -248,6 +259,7 @@ function renderProjects() {
             document.getElementById('langSelect').value = projects[name].lang;
             monaco.editor.setModelLanguage(editor.getModel(), projects[name].lang);
             renderProjects();
+            runCode();
         };
         list.appendChild(div);
     });

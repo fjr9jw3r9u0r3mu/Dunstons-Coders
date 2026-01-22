@@ -95,7 +95,7 @@ select{background:#1a2025; color:var(--accent); border:1px solid var(--border); 
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
 <script>
-const IS_MAINTENANCE = true; 
+const IS_MAINTENANCE = false; 
 const PASSKEY = "dunten2011";
 let editor, activeProj = localStorage.getItem('DC_LastProj') || 'Default';
 let projects = JSON.parse(localStorage.getItem('DC_Storage_V5')) || { 'Default': { code: '<h1>Ready</h1>', lang: 'html' } };
@@ -243,3 +243,4 @@ function createNewProject() {
 </script>
 </body>
 </html>
+

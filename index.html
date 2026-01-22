@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>dunstons-coder | Global IDE</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
     <style>
         :root {
             --bg: #010409; --panel: #0d1117; --accent: #00ff41; --border: #30363d;
@@ -12,40 +16,36 @@
 
         body, html { margin: 0; padding: 0; height: 100vh; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* Navigation */
         .header { height: 55px; background: var(--panel); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid var(--border); z-index: 100; }
         .logo { color: var(--accent); font-weight: 800; letter-spacing: 1.5px; font-size: 15px; }
-        .nav-actions { display: flex; gap: 10px; }
+        .nav-actions { display: flex; gap: 8px; align-items: center; }
         
-        .btn { background: #21262d; color: var(--text); border: 1px solid var(--border); padding: 8px 16px; font-size: 12px; border-radius: 6px; cursor: pointer; font-weight: 700; transition: 0.2s; }
+        .btn { background: #21262d; color: var(--text); border: 1px solid var(--border); padding: 8px 14px; font-size: 11px; border-radius: 6px; cursor: pointer; font-weight: 700; transition: 0.2s; white-space: nowrap; }
         .btn-run { background: var(--accent); color: #000; border: none; }
-        .btn:hover { border-color: var(--accent); opacity: 0.9; }
+        .btn-cloud { border-color: #4285f4; color: #4285f4; }
+        .btn:hover { opacity: 0.8; scale: 1.02; }
 
-        /* Workspace */
+        .user-profile { display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--text-dim); border-left: 1px solid var(--border); padding-left: 10px; }
+        .user-img { width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--accent); }
+
         .main-wrapper { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
         .h-split { display: flex; flex: 1; min-height: 0; }
         .pane { min-width: 50px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
         #editor-pane { width: 50%; background: var(--bg); }
         #preview-pane { flex: 1; background: #fff; }
 
-        /* Draggable Bars */
         .gutter-h { width: 4px; background: var(--border); cursor: col-resize; }
-        .gutter-h:hover { background: var(--accent); }
         .gutter-v { height: 4px; background: var(--border); cursor: row-resize; }
-        .gutter-v:hover { background: var(--accent); }
 
         .pane-label { padding: 6px 15px; font-size: 10px; color: var(--text-dim); background: #161b22; border-bottom: 1px solid var(--border); text-transform: uppercase; }
         textarea { flex: 1; background: var(--bg); color: var(--accent); padding: 20px; font-family: 'Fira Code', monospace; font-size: 14px; border: none; outline: none; resize: none; line-height: 1.6; }
         iframe { width: 100%; height: 100%; border: none; }
 
-        /* Console */
         #console-pane { height: 100px; background: var(--panel); display: flex; flex-direction: column; }
-        #console-out { flex: 1; padding: 10px; font-family: monospace; font-size: 12px; color: var(--accent); overflow-y: auto; }
+        #console-out { flex: 1; padding: 10px; font-family: monospace; font-size: 11px; color: var(--accent); overflow-y: auto; }
 
-        /* Footer */
         .footer { height: 25px; background: var(--panel); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 9px; color: var(--text-dim); }
 
-        /* Modal */
         #aboutModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; place-items: center; }
         .modal { background: var(--panel); padding: 30px; border-radius: 12px; border: 1px solid var(--border); max-width: 400px; text-align: center; }
     </style>
@@ -55,9 +55,14 @@
     <header class="header">
         <div class="logo">DUNSTONS-CODER</div>
         <div class="nav-actions">
+            <button class="btn btn-cloud" id="login-btn" onclick="login()">Google Login</button>
+            <button class="btn" id="save-btn" onclick="saveToCloud()" style="display:none;">Cloud Save</button>
             <button class="btn" onclick="toggleAbout()">Developer Profile</button>
-            <button class="btn" onclick="downloadFile()">Download Project</button>
             <button class="btn btn-run" onclick="execute()">RUN SCRIPT ▶</button>
+            <div id="user-display" class="user-profile" style="display:none;">
+                <img id="user-photo" class="user-img" src="">
+                <span onclick="logout()" style="cursor:pointer">Logout</span>
+            </div>
         </div>
     </header>
 
@@ -84,69 +89,117 @@
     </div>
 
     <footer class="footer">
-        <div>© 2024-2026 | Dunston Jude Bandasa | Engineered in Sabah, Malaysia</div>
-        <div id="user-info">Detecting User Context...</div>
+        <div>© 2024-2026 | Dunston Jude Bandasa | Sabah, Malaysia</div>
+        <div id="user-info">Syncing...</div>
     </footer>
 
     <div id="aboutModal" onclick="toggleAbout()">
         <div class="modal" onclick="event.stopPropagation()">
             <h2 style="color:var(--accent); margin:0;">Dunston Jude Bandasa</h2>
             <p style="font-size: 11px; color: var(--text-dim);">Systems Developer | Form 3</p>
-            <p style="font-size: 14px; margin: 20px 0;">Currently studying in <strong>Sabah, Malaysia</strong>. This IDE is designed to be a completely free, premium learning tool for everyone globally.</p>
+            <p style="font-size: 14px; margin: 20px 0;">Currently studying in <strong>Sabah, Malaysia</strong>. Cloud saving enabled via Firebase.</p>
             <button class="btn" style="width:100%;" onclick="toggleAbout()">Close</button>
         </div>
     </div>
 
     <script>
+        // --- FIREBASE CONFIGURATION ---
+        // REPLACE THESE with your actual Firebase config from the Firebase Console!
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        let currentUser = null;
+
+        // --- AUTH LOGIC ---
+        function login() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider).catch(e => logTerminal("Auth Error: " + e.message));
+        }
+
+        function logout() { auth.signOut(); }
+
+        auth.onAuthStateChanged(user => {
+            currentUser = user;
+            const loginBtn = document.getElementById('login-btn');
+            const saveBtn = document.getElementById('save-btn');
+            const userDisplay = document.getElementById('user-display');
+            
+            if (user) {
+                loginBtn.style.display = 'none';
+                saveBtn.style.display = 'block';
+                userDisplay.style.display = 'flex';
+                document.getElementById('user-photo').src = user.photoURL;
+                logTerminal(`Signed in as ${user.displayName}`);
+                loadFromCloud();
+            } else {
+                loginBtn.style.display = 'block';
+                saveBtn.style.display = 'none';
+                userDisplay.style.display = 'none';
+                logTerminal("User logged out.");
+            }
+        });
+
+        // --- CLOUD SAVE/LOAD ---
+        async function saveToCloud() {
+            if (!currentUser) return;
+            try {
+                await db.collection("user_codes").doc(currentUser.uid).set({
+                    code: editor.value,
+                    lastSaved: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                logTerminal("Project synced to Cloud Database.");
+            } catch (e) { logTerminal("Save Error: " + e.message); }
+        }
+
+        async function loadFromCloud() {
+            const doc = await db.collection("user_codes").doc(currentUser.uid).get();
+            if (doc.exists) {
+                editor.value = doc.data().code;
+                execute();
+                logTerminal("Latest Cloud version restored.");
+            }
+        }
+
+        // --- CORE IDE LOGIC ---
         const editor = document.getElementById('editor');
         const preview = document.getElementById('preview');
-        const resizerH = document.getElementById('resizer-h');
-        const resizerV = document.getElementById('resizer-v');
-        const editorPane = document.getElementById('editor-pane');
-        const consolePane = document.getElementById('console-pane');
 
-        // Draggable Logic
-        resizerH.addEventListener('mousedown', () => {
-            const dragH = (e) => {
-                let w = (e.clientX / window.innerWidth) * 100;
-                if(w > 15 && w < 85) editorPane.style.width = w + '%';
-            };
-            document.addEventListener('mousemove', dragH);
-            document.addEventListener('mouseup', () => document.removeEventListener('mousemove', dragH));
-        });
-
-        resizerV.addEventListener('mousedown', () => {
-            const dragV = (e) => {
-                let h = window.innerHeight - e.clientY - 25;
-                if(h > 40 && h < 400) consolePane.style.height = h + 'px';
-            };
-            document.addEventListener('mousemove', dragV);
-            document.addEventListener('mouseup', () => document.removeEventListener('mousemove', dragV));
-        });
-
-        // Smart Info Bar (Fixes your time concern)
-        function updateUserInfo() {
-            const now = new Date();
-            const timeStr = now.toLocaleTimeString();
-            const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            document.getElementById('user-info').innerText = `${timeStr} | ${zone}`;
+        function logTerminal(msg) {
+            document.getElementById('console-out').innerHTML += `<br>> [${new Date().toLocaleTimeString()}] ${msg}`;
         }
 
         function execute() {
             const code = editor.value;
-            localStorage.setItem('dc_global_save', code);
             const doc = preview.contentWindow.document;
             doc.open(); doc.write(code); doc.close();
-            document.getElementById('console-out').innerHTML += `<br>> [${new Date().toLocaleTimeString()}] Script Deployed.`;
+            localStorage.setItem('dc_global_save', code);
         }
 
-        function downloadFile() {
-            const blob = new Blob([editor.value], { type: "text/html" });
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = "index.html";
-            a.click();
-        }
+        // Draggable Logic
+        document.getElementById('resizer-h').onmousedown = () => {
+            document.onmousemove = e => {
+                let w = (e.clientX / window.innerWidth) * 100;
+                if(w > 15 && w < 85) document.getElementById('editor-pane').style.width = w + '%';
+            };
+            document.onmouseup = () => document.onmousemove = null;
+        };
+
+        document.getElementById('resizer-v').onmousedown = () => {
+            document.onmousemove = e => {
+                let h = window.innerHeight - e.clientY - 25;
+                if(h > 40 && h < 400) document.getElementById('console-pane').style.height = h + 'px';
+            };
+            document.onmouseup = () => document.onmousemove = null;
+        };
 
         function toggleAbout() {
             const m = document.getElementById('aboutModal');
@@ -156,9 +209,12 @@
         function clearCon() { document.getElementById('console-out').innerHTML = "> Terminal Reset."; }
 
         window.onload = () => {
-            editor.value = localStorage.getItem('dc_global_save') || "<h1>System Online</h1>\n<p>Your local time and zone are shown in the footer.</p>";
+            editor.value = localStorage.getItem('dc_global_save') || "<h1>Cloud IDE Ready</h1>";
             execute();
-            setInterval(updateUserInfo, 1000);
+            setInterval(() => {
+                const now = new Date();
+                document.getElementById('user-info').innerText = `${now.toLocaleTimeString()} | ${Intl.DateTimeFormat().resolvedOptions().timeZone}`;
+            }, 1000);
         };
     </script>
 </body>

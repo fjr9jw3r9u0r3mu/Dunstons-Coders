@@ -2,85 +2,91 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Dunstons-Coder | Elite Professional IDE</title>
+<title>Dunstons-Coder | Global Elite IDE</title>
 <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs/editor/editor.main.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-:root{ --bg:#05070a; --panel:#0d1117; --accent:#00ff41; --border:#2b3238; --text:#e6edf3; --vs-bg:#1e1e1e; --danger:#ff4d4d; }
+:root{ --bg:#05070a; --panel:#0d1117; --accent:#00ff41; --border:#2b3238; --text:#e6edf3; --vs-bg:#1e1e1e; }
 *{box-sizing:border-box; outline:none;}
 body,html{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:system-ui;overflow:hidden;display:flex;flex-direction:column}
 
-/* Header */
+/* Maintenance System */
+#lockScreen{display:none; position:fixed; inset:0; background:#000; z-index:99999; place-items:center; text-align:center}
+.lock-box{background:var(--panel); padding:40px; border:1px solid var(--border); border-radius:20px; width:350px}
+
+/* Header UI */
 .header{height:60px;background:rgba(13,17,23,0.9);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:space-between;padding:0 25px;border-bottom:1px solid var(--border);z-index:1000}
-.logo{color:var(--accent);font-weight:900;font-size:20px;letter-spacing:1.5px}
-.btn{background:#1a2025;color:var(--text);border:1px solid var(--border);padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px;display:flex;align-items:center;gap:8px;transition:0.3s}
+.logo{color:var(--accent);font-weight:900;font-size:18px;letter-spacing:1.5px}
+.btn{background:#1a2025;color:var(--text);border:1px solid var(--border);padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px;display:flex;align-items:center;gap:8px}
 .btn:hover{border-color:var(--accent);background:#252b32}
 
 /* Main Layout */
-.app-body{flex:1;display:flex;min-height:0;position:relative;z-index:1}
-
-/* Sidebar */
-.sidebar{width:260px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:0.3s}
+.app-body{flex:1;display:flex;min-height:0;position:relative}
+.sidebar{width:250px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:0.3s}
 .sidebar.minimized{width:0;opacity:0;pointer-events:none}
 
-/* Editor Section - Fixed Layering */
-.editor-container{width:50%; display:flex; flex-direction:column; background:var(--vs-bg); border-right:1px solid var(--border); transition:0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow:hidden}
+/* Editor Logic */
+.editor-container{width:50%; display:flex; flex-direction:column; background:var(--vs-bg); border-right:1px solid var(--border); transition:0.3s}
 .editor-container.minimized{width:0 !important; border:none}
-
-.resizer-bar{width:6px; background:#111; cursor:col-resize; z-index:10}
+.resizer-bar{width:4px; background:#111; cursor:col-resize; z-index:10}
 .resizer-bar:hover{background:var(--accent)}
 
-/* Result Section */
+/* Result & Console */
 .preview-container{flex:1; background:#fff; display:flex; flex-direction:column; position:relative}
 iframe{flex:1; width:100%; border:none; background:#fff}
+.console-wrapper{display:flex; flex-direction:column; background:#000; transition:0.3s; z-index:500}
+.console-wrapper.minimized{height:35px !important}
+.console-header{height:35px; background:#0f1418; display:flex; justify-content:space-between; align-items:center; padding:0 15px; cursor:pointer; border-top:1px solid var(--border)}
+#langOutput{height:180px; padding:15px; font-family:monospace; color:var(--accent); overflow-y:auto; white-space:pre-wrap; font-size:13px}
 
-/* Terminal Console - Always Visible when not minimized */
-.console-wrapper{display:flex; flex-direction:column; border-top:1px solid var(--border); background:#05070a; transition:0.3s; z-index:500}
-.console-wrapper.minimized{height:40px !important}
-.console-header{height:40px; background:#0f1418; display:flex; justify-content:space-between; align-items:center; padding:0 20px; cursor:pointer}
-#langOutput{height:160px; padding:20px; font-family:monospace; color:var(--accent); overflow-y:auto; white-space:pre-wrap; background:#000}
-
-/* Project Items */
-.proj-item{padding:12px; background:#161b22; margin:8px; border-radius:10px; cursor:pointer; font-size:13px; display:flex; justify-content:space-between; border:1px solid transparent}
+/* Projects */
+.proj-item{padding:10px; background:#161b22; margin:5px; border-radius:8px; cursor:pointer; font-size:12px; display:flex; justify-content:space-between; border:1px solid transparent}
 .proj-item.active{border-color:var(--accent); background:rgba(0,255,65,0.05)}
 
-/* Floating Show Editor Button */
-#showEditorBtn{display:none; position:fixed; bottom:60px; left:20px; z-index:2000; background:var(--accent); color:#000; border:none; padding:12px 24px; border-radius:50px; font-weight:800; cursor:pointer; box-shadow:0 0 20px rgba(0,255,65,0.4)}
+#showEditorBtn{display:none; position:fixed; bottom:60px; left:20px; z-index:2000; background:var(--accent); color:#000; padding:12px 24px; border-radius:50px; font-weight:800; cursor:pointer}
 
-.modal{display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:10000; place-items:center; backdrop-filter:blur(10px)}
-.modal-content{background:var(--panel); padding:40px; border:1px solid var(--border); width:550px; border-radius:24px; text-align:center}
+.modal{display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:10000; place-items:center; backdrop-filter:blur(8px)}
+.modal-content{background:var(--panel); padding:40px; border:1px solid var(--border); width:500px; border-radius:20px; text-align:center}
 
-select{background:#1a2025; color:var(--accent); border:1px solid var(--border); padding:6px 12px; border-radius:8px; font-weight:bold}
+select{background:#1a2025; color:var(--accent); border:1px solid var(--border); padding:6px; border-radius:6px; font-weight:bold; cursor:pointer}
 </style>
 </head>
 <body>
 
-<header class="header">
-    <div style="display:flex;align-items:center;gap:20px">
+<div id="lockScreen">
+    <div class="lock-box">
         <div class="logo">DUNSTONS-CODER</div>
-        <button class="btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i> EXPLORER</button>
+        <p style="margin-top:15px; font-size:12px; opacity:0.6">MAINTENANCE ACTIVE</p>
+        <input type="password" id="passInput" placeholder="Passkey" style="width:100%; padding:12px; background:#000; border:1px solid var(--border); color:white; margin:15px 0; border-radius:8px; text-align:center">
+        <button class="btn" style="width:100%; justify-content:center; background:var(--accent); color:#000" onclick="unlock()">ACCESS SITE</button>
+    </div>
+</div>
+
+<header class="header">
+    <div style="display:flex;align-items:center;gap:15px">
+        <div class="logo">DUNSTONS-CODER</div>
+        <button class="btn" onclick="toggleSidebar()"><i class="fa-solid fa-folder"></i></button>
         <select id="langSelect" onchange="changeLang()">
-            <option value="html">WEB ENGINE</option>
+            <option value="html">HTML/WEB</option>
             <option value="python">PYTHON 3</option>
-            <option value="java">JAVA (JDK)</option>
-            <option value="cpp">C++ (GCC)</option>
+            <option value="lua">LUA</option>
+            <option value="java">JAVA</option>
+            <option value="cpp">C++</option>
         </select>
     </div>
-    <div style="display:flex; gap:12px; align-items:center">
-        <button class="btn" onclick="toggleEditor()"><i class="fa-solid fa-compress"></i> MINIMIZE EDITOR</button>
-        <button class="btn" onclick="openAbout()">OUR MISSION</button>
-        <button class="btn" style="background:var(--accent); color:#000" onclick="runCode()">EXECUTE ▶</button>
+    <div style="display:flex; gap:10px; align-items:center">
+        <button class="btn" onclick="toggleEditor()"><i class="fa-solid fa-window-minimize"></i> EDITOR</button>
+        <button class="btn" onclick="openAbout()">MISSION</button>
+        <button class="btn" style="background:var(--accent); color:#000" onclick="runCode()">RUN ▶</button>
     </div>
 </header>
 
 <div class="app-body">
     <aside class="sidebar" id="sidebar">
-        <div style="padding:20px; font-size:11px; font-weight:bold; opacity:0.4">SAVED PROJECTS</div>
-        <div id="projectList" style="flex:1; overflow-y:auto"></div>
-        <div style="padding:15px; border-top:1px solid var(--border)">
-            <button class="btn" style="width:100%; justify-content:center" onclick="createNewProject()">+ NEW PROJECT</button>
-        </div>
+        <div style="padding:15px; font-size:10px; opacity:0.4">PROJECTS</div>
+        <div id="projectList" style="flex:1"></div>
+        <button class="btn" style="margin:10px" onclick="createNewProject()">+ NEW</button>
     </aside>
 
     <section class="editor-container" id="editorSection">
@@ -94,7 +100,7 @@ select{background:#1a2025; color:var(--accent); border:1px solid var(--border); 
         
         <div class="console-wrapper" id="consolePane">
             <div class="console-header" onclick="toggleConsole()">
-                <span style="font-size:11px; font-weight:bold">DEBUG CONSOLE</span>
+                <span style="font-size:11px; font-weight:bold"><i class="fa-solid fa-terminal"></i> DEBUGGER</span>
                 <i id="minIcon" class="fa-solid fa-chevron-down"></i>
             </div>
             <div id="langOutput"></div>
@@ -106,21 +112,24 @@ select{background:#1a2025; color:var(--accent); border:1px solid var(--border); 
 
 <div class="modal" id="aboutModal">
     <div class="modal-content">
-        <h1>Dunston Jude Bandasa</h1>
+        <h2>Dunston Jude Bandasa</h2>
         <p style="color:var(--accent); font-weight:bold">Form 3 Student | Sabah, Malaysia</p>
-        <div style="text-align:left; background:rgba(0,0,0,0.3); padding:25px; border-radius:15px; border-left:4px solid var(--accent); margin:25px 0">
+        <div style="text-align:left; background:rgba(0,0,0,0.3); padding:20px; border-radius:10px; border-left:4px solid var(--accent); margin:20px 0">
             <p><strong>The Mission:</strong> Dunston created this site to provide everyone in the world a chance to learn and do coding for free with no limits.</p>
             <p><strong>Support:</strong> Dedicated to empowering <strong>Sabah students</strong> to become global tech leaders from their own homes.</p>
         </div>
-        <button class="btn" style="width:100%; justify-content:center; background:var(--accent); color:#000" onclick="closeAbout()">START BUILDING</button>
+        <button class="btn" style="width:100%; justify-content:center; background:var(--accent); color:#000" onclick="closeAbout()">START</button>
     </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
 <script>
-// STORAGE & EDITOR INIT
+// --- CONFIG ---
+const IS_MAINTENANCE = false; // Toggle to true to lock
+const PASSKEY = "dunten2011";
+
 let editor, activeProj = localStorage.getItem('DC_LastProj') || 'Default';
-let projects = JSON.parse(localStorage.getItem('DC_Storage_V4')) || { 'Default': { code: '<h1>Hello</h1>', lang: 'html' } };
+let projects = JSON.parse(localStorage.getItem('DC_Storage_V5')) || { 'Default': { code: '<h1>Ready</h1>', lang: 'html' } };
 
 require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs' }});
 require(['vs/editor/editor.main'], function() {
@@ -133,15 +142,13 @@ require(['vs/editor/editor.main'], function() {
 
     editor.onDidChangeModelContent(() => {
         projects[activeProj].code = editor.getValue();
-        localStorage.setItem('DC_Storage_V4', JSON.stringify(projects));
-        clearTimeout(window.runTimer);
-        window.runTimer = setTimeout(runCode, 1000);
+        localStorage.setItem('DC_Storage_V5', JSON.stringify(projects));
     });
 
+    if(IS_MAINTENANCE) document.getElementById('lockScreen').style.display = 'grid';
     renderProjects();
 });
 
-// CORE FUNCTIONS
 async function runCode() {
     const code = editor.getValue();
     const lang = document.getElementById('langSelect').value;
@@ -153,32 +160,33 @@ async function runCode() {
         frame.srcdoc = code;
     } else {
         frame.style.display = 'none'; langDiv.style.display = 'block';
+        langDiv.textContent = "Running...";
         try {
             const res = await fetch('https://emkc.org/api/v2/piston/execute', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ language: lang, version: "*", files: [{ name: lang === 'java' ? 'Main.java' : 'index', content: code }] })
+                body: JSON.stringify({ 
+                    language: lang, 
+                    version: "*", 
+                    files: [{ name: lang === 'java' ? 'Main.java' : 'script', content: code }] 
+                })
             });
             const data = await res.json();
-            langDiv.textContent = data.run.output || data.run.stderr;
+            langDiv.textContent = data.run.output || data.run.stderr || "Success (No output)";
         } catch (e) { langDiv.textContent = "Engine error."; }
     }
 }
 
-// UI LOGIC
+function unlock() { if(document.getElementById('passInput').value === PASSKEY) document.getElementById('lockScreen').style.display = 'none'; }
 function toggleEditor() {
     const ed = document.getElementById('editorSection');
-    const btn = document.getElementById('showEditorBtn');
     ed.classList.toggle('minimized');
-    btn.style.display = ed.classList.contains('minimized') ? 'block' : 'none';
-    setTimeout(() => editor.layout(), 450);
+    document.getElementById('showEditorBtn').style.display = ed.classList.contains('minimized') ? 'block' : 'none';
+    setTimeout(() => editor.layout(), 300);
 }
-
-function toggleConsole() {
-    document.getElementById('consolePane').classList.toggle('minimized');
-}
-
+function toggleConsole() { document.getElementById('consolePane').classList.toggle('minimized'); }
 function toggleSidebar() { document.getElementById('sidebar').classList.toggle('minimized'); }
+function changeLang() { monaco.editor.setModelLanguage(editor.getModel(), document.getElementById('langSelect').value); }
 function openAbout() { document.getElementById('aboutModal').style.display = 'grid'; }
 function closeAbout() { document.getElementById('aboutModal').style.display = 'none'; }
 
@@ -200,7 +208,7 @@ function renderProjects() {
 }
 
 function createNewProject() {
-    const name = prompt("Project Name:");
+    const name = prompt("Name:");
     if(name) { projects[name] = { code: '', lang: 'html' }; renderProjects(); }
 }
 

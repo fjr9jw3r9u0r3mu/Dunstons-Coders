@@ -2,68 +2,164 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Dunston's Executor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dunstons-coder | Global IDE</title>
     <style>
-        :root { --bg: #0f172a; --panel: #1e293b; --accent: #38bdf8; --text: #f1f5f9; }
-        body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Consolas', monospace; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        .nav { background: var(--panel); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent); }
-        .main { display: flex; flex: 1; }
-        .editor-container { flex: 1; display: flex; flex-direction: column; border-right: 1px solid #334155; }
-        textarea { flex: 1; background: #000; color: #38bdf8; padding: 20px; font-size: 16px; border: none; outline: none; resize: none; }
-        iframe { flex: 1; background: #fff; border: none; }
-        .btn-group { display: flex; gap: 10px; }
-        button { background: var(--accent); color: #000; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; }
-        button:hover { opacity: 0.8; }
-        .tag { font-size: 1.2em; font-weight: bold; color: var(--accent); }
+        :root {
+            --bg: #010409; --panel: #0d1117; --accent: #00ff41; --border: #30363d;
+            --text: #c9d1d9; --text-dim: #8b949e;
+        }
+
+        body, html { margin: 0; padding: 0; height: 100vh; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* Navigation */
+        .header { height: 55px; background: var(--panel); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid var(--border); z-index: 100; }
+        .logo { color: var(--accent); font-weight: 800; letter-spacing: 1.5px; font-size: 15px; }
+        .nav-actions { display: flex; gap: 10px; }
+        
+        .btn { background: #21262d; color: var(--text); border: 1px solid var(--border); padding: 8px 16px; font-size: 12px; border-radius: 6px; cursor: pointer; font-weight: 700; transition: 0.2s; }
+        .btn-run { background: var(--accent); color: #000; border: none; }
+        .btn:hover { border-color: var(--accent); opacity: 0.9; }
+
+        /* Workspace */
+        .main-wrapper { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+        .h-split { display: flex; flex: 1; min-height: 0; }
+        .pane { min-width: 50px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        #editor-pane { width: 50%; background: var(--bg); }
+        #preview-pane { flex: 1; background: #fff; }
+
+        /* Draggable Bars */
+        .gutter-h { width: 4px; background: var(--border); cursor: col-resize; }
+        .gutter-h:hover { background: var(--accent); }
+        .gutter-v { height: 4px; background: var(--border); cursor: row-resize; }
+        .gutter-v:hover { background: var(--accent); }
+
+        .pane-label { padding: 6px 15px; font-size: 10px; color: var(--text-dim); background: #161b22; border-bottom: 1px solid var(--border); text-transform: uppercase; }
+        textarea { flex: 1; background: var(--bg); color: var(--accent); padding: 20px; font-family: 'Fira Code', monospace; font-size: 14px; border: none; outline: none; resize: none; line-height: 1.6; }
+        iframe { width: 100%; height: 100%; border: none; }
+
+        /* Console */
+        #console-pane { height: 100px; background: var(--panel); display: flex; flex-direction: column; }
+        #console-out { flex: 1; padding: 10px; font-family: monospace; font-size: 12px; color: var(--accent); overflow-y: auto; }
+
+        /* Footer */
+        .footer { height: 25px; background: var(--panel); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 9px; color: var(--text-dim); }
+
+        /* Modal */
+        #aboutModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; place-items: center; }
+        .modal { background: var(--panel); padding: 30px; border-radius: 12px; border: 1px solid var(--border); max-width: 400px; text-align: center; }
     </style>
 </head>
 <body>
 
-    <div class="nav">
-        <div class="tag">DUNSTON'S EXECUTOR</div>
-        <div class="btn-group">
-            <button onclick="downloadCode()">💾 DOWNLOAD .HTML</button>
-            <button style="background:#ef4444; color:white;" onclick="clearCode()">🗑️ CLEAR</button>
+    <header class="header">
+        <div class="logo">DUNSTONS-CODER</div>
+        <div class="nav-actions">
+            <button class="btn" onclick="toggleAbout()">Developer Profile</button>
+            <button class="btn" onclick="downloadFile()">Download Project</button>
+            <button class="btn btn-run" onclick="execute()">RUN SCRIPT ▶</button>
+        </div>
+    </header>
+
+    <div class="main-wrapper">
+        <div class="h-split">
+            <div class="pane" id="editor-pane">
+                <div class="pane-label">Source Editor</div>
+                <textarea id="editor" spellcheck="false"></textarea>
+            </div>
+            <div class="gutter-h" id="resizer-h"></div>
+            <div class="pane" id="preview-pane">
+                <div class="pane-label" style="background:#f1f1f1; color:#555;">Live Preview</div>
+                <iframe id="preview"></iframe>
+            </div>
+        </div>
+        <div class="gutter-v" id="resizer-v"></div>
+        <div id="console-pane">
+            <div class="pane-label" style="display:flex; justify-content:space-between;">
+                <span>System Terminal</span>
+                <span onclick="clearCon()" style="cursor:pointer">Clear</span>
+            </div>
+            <div id="console-out">> Cloud Environment Ready.</div>
         </div>
     </div>
 
-    <div class="main">
-        <textarea id="editor" placeholder="Paste your HTML, CSS, or JS code here..." oninput="run()"></textarea>
-        <iframe id="viewer"></iframe>
+    <footer class="footer">
+        <div>© 2024-2026 | Dunston Jude Bandasa | Engineered in Sabah, Malaysia</div>
+        <div id="user-info">Detecting User Context...</div>
+    </footer>
+
+    <div id="aboutModal" onclick="toggleAbout()">
+        <div class="modal" onclick="event.stopPropagation()">
+            <h2 style="color:var(--accent); margin:0;">Dunston Jude Bandasa</h2>
+            <p style="font-size: 11px; color: var(--text-dim);">Systems Developer | Form 3</p>
+            <p style="font-size: 14px; margin: 20px 0;">Currently studying in <strong>Sabah, Malaysia</strong>. This IDE is designed to be a completely free, premium learning tool for everyone globally.</p>
+            <button class="btn" style="width:100%;" onclick="toggleAbout()">Close</button>
+        </div>
     </div>
 
     <script>
         const editor = document.getElementById('editor');
-        const viewer = document.getElementById('viewer');
+        const preview = document.getElementById('preview');
+        const resizerH = document.getElementById('resizer-h');
+        const resizerV = document.getElementById('resizer-v');
+        const editorPane = document.getElementById('editor-pane');
+        const consolePane = document.getElementById('console-pane');
 
-        // Load saved code
-        editor.value = localStorage.getItem('dunstonCode') || "<h1>Welcome to Dunston's</h1>\n<p>Start coding here...</p>";
+        // Draggable Logic
+        resizerH.addEventListener('mousedown', () => {
+            const dragH = (e) => {
+                let w = (e.clientX / window.innerWidth) * 100;
+                if(w > 15 && w < 85) editorPane.style.width = w + '%';
+            };
+            document.addEventListener('mousemove', dragH);
+            document.addEventListener('mouseup', () => document.removeEventListener('mousemove', dragH));
+        });
 
-        function run() {
-            const code = editor.value;
-            localStorage.setItem('dunstonCode', code);
-            const target = viewer.contentWindow.document;
-            target.open();
-            target.write(code);
-            target.close();
+        resizerV.addEventListener('mousedown', () => {
+            const dragV = (e) => {
+                let h = window.innerHeight - e.clientY - 25;
+                if(h > 40 && h < 400) consolePane.style.height = h + 'px';
+            };
+            document.addEventListener('mousemove', dragV);
+            document.addEventListener('mouseup', () => document.removeEventListener('mousemove', dragV));
+        });
+
+        // Smart Info Bar (Fixes your time concern)
+        function updateUserInfo() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString();
+            const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            document.getElementById('user-info').innerText = `${timeStr} | ${zone}`;
         }
 
-        function downloadCode() {
+        function execute() {
+            const code = editor.value;
+            localStorage.setItem('dc_global_save', code);
+            const doc = preview.contentWindow.document;
+            doc.open(); doc.write(code); doc.close();
+            document.getElementById('console-out').innerHTML += `<br>> [${new Date().toLocaleTimeString()}] Script Deployed.`;
+        }
+
+        function downloadFile() {
             const blob = new Blob([editor.value], { type: "text/html" });
             const a = document.createElement("a");
             a.href = URL.createObjectURL(blob);
-            a.download = "my_project.html";
+            a.download = "index.html";
             a.click();
         }
 
-        function clearCode() {
-            if(confirm("Delete everything?")) {
-                editor.value = "";
-                run();
-            }
+        function toggleAbout() {
+            const m = document.getElementById('aboutModal');
+            m.style.display = (m.style.display === 'grid') ? 'none' : 'grid';
         }
 
-        run(); // Initial launch
+        function clearCon() { document.getElementById('console-out').innerHTML = "> Terminal Reset."; }
+
+        window.onload = () => {
+            editor.value = localStorage.getItem('dc_global_save') || "<h1>System Online</h1>\n<p>Your local time and zone are shown in the footer.</p>";
+            execute();
+            setInterval(updateUserInfo, 1000);
+        };
     </script>
 </body>
 </html>

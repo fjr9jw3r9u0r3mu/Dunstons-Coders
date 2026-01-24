@@ -133,7 +133,7 @@
             <button class="btn" title="Share via URL" onclick="shareProject()"><i class="fa-solid fa-share-nodes"></i> SHARE</button>
             <button class="btn" title="Export as Zip" onclick="exportZip()"><i class="fa-solid fa-file-zipper"></i> EXPORT</button>
             <button class="btn" title="Toggle Theme" onclick="toggleTheme()"><i class="fa-solid fa-circle-half-stroke"></i></button>
-            <button class="btn btn-run" onclick="executeCurrent()"><i class="fa-solid fa-play"></i> RUN</button>
+            <button id="run-btn" class="btn btn-run" onclick="executeCurrent()"><i class="fa-solid fa-play"></i> RUN</button>
         </div>
     </header>
 
@@ -174,7 +174,21 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
 <script>
     let editor, files = {}, activeFile = '';
+    // Piston endpoint
     const API = "https://emkc.org/api/v2/piston/execute";
+
+    // Recommended language versions for Piston (tweakable)
+    const VERSION_MAP = {
+        'python': '3.10.6',
+        'java': '17.0.1',
+        'cpp': '10.2.0',
+        'lua': '5.3.5',
+        'html': '*'
+    };
+
+    // Output limit and timeout
+    const OUTPUT_LIMIT = 20000; // characters
+    const RUN_TIMEOUT = 15000; // ms
 
     // 9. PROFESSIONAL TEST TEMPLATES
     const TEMPLATES = {
@@ -201,7 +215,7 @@
 
         // Shortcuts
         editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, executeCurrent);
-        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, (e) => {
             saveState();
             showStatus("Snapshot saved to Browser Storage.");
         });
@@ -217,60 +231,117 @@
         switchFile(lastFile);
         renderFileList();
         checkURLShare();
+
+        // save on unload
+        window.addEventListener('beforeunload', saveState);
     });
+
+    // UTIL: Escape HTML for safe console rendering
+    function escapeHtml(text) {
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
 
     // 1. JAVA & MULTI-LANGUAGE ENGINE
     async function executeCurrent() {
         const out = document.getElementById('output');
+        if (!activeFile) { showStatus('No active file selected.'); return; }
         const file = files[activeFile];
+        const runBtn = document.getElementById('run-btn');
+        runBtn.disabled = true; runBtn.style.opacity = '0.6';
         const start = performance.now();
-        
-        out.innerHTML = `<span style="color:#8b949e"># Compiling ${activeFile}...</span>\n`;
+
+        out.innerHTML = `<span style="color:#8b949e"># Compiling ${escapeHtml(activeFile)}...</span>\n`;
         document.getElementById('exec-time').innerText = "";
 
         if (file.lang === 'html') {
-            const blob = new Blob([file.content], {type: 'text/html'});
-            const url = URL.createObjectURL(blob);
-            window.open(url, '_blank');
-            out.innerHTML += `> Rendered index.html in new tab.`;
+            try {
+                const blob = new Blob([file.content], {type: 'text/html'});
+                const url = URL.createObjectURL(blob);
+                window.open(url, '_blank');
+                out.innerHTML += `> Rendered ${escapeHtml(activeFile)} in new tab.`;
+            } catch (e) {
+                out.innerHTML = `<span style=\"color:var(--error)\">HTML Render Failed.</span>`;
+            } finally { runBtn.disabled = false; runBtn.style.opacity = ''; }
             return;
         }
+
+        // Prepare files for API
+        const payloadFiles = Object.keys(files).map(name => ({ name, content: files[name].content }));
+        const lang = file.lang || 'python';
+        const version = VERSION_MAP[lang] || '*';
+
+        // Abort controller for timeout
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), RUN_TIMEOUT);
 
         try {
             const res = await fetch(API, {
                 method: 'POST',
-                body: JSON.stringify({
-                    language: file.lang,
-                    version: "*",
-                    files: Object.keys(files).map(name => ({
-                        name: name,
-                        content: files[name].content
-                    }))
-                })
+                signal: controller.signal,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ language: lang, version: version, files: payloadFiles })
             });
+            clearTimeout(timeout);
+
+            if (!res.ok) throw new Error(`Execution API responded ${res.status}`);
             const data = await res.json();
             const elapsed = ((performance.now() - start) / 1000).toFixed(2);
-            
-            if (data.run) {
-                const combinedOutput = data.run.stdout + (data.run.stderr || "");
-                out.innerText = combinedOutput || "Program finished (no output).";
-                if (data.run.stderr) out.style.color = "var(--error)";
-                else out.style.color = "#d1d1d1";
-                document.getElementById('exec-time').innerText = `${elapsed}s`;
+
+            // Piston may return compile/run objects
+            let combined = '';
+            if (data.compile) {
+                combined += (data.compile.stdout || '') + (data.compile.stderr || '');
+                if (data.compile.stderr) {
+                    out.style.color = 'var(--error)';
+                    out.innerHTML = escapeHtml(combined) || 'Compilation finished with no output.';
+                    document.getElementById('exec-time').innerText = `${elapsed}s`;
+                    runBtn.disabled = false; runBtn.style.opacity = '';
+                    return;
+                }
             }
+
+            if (data.run) {
+                combined += (data.run.stdout || '') + (data.run.stderr || '');
+            }
+
+            combined = combined || 'Program finished (no output).';
+            // truncate long output
+            let truncated = false;
+            if (combined.length > OUTPUT_LIMIT) { combined = combined.slice(0, OUTPUT_LIMIT); truncated = true; }
+
+            out.innerText = combined;
+            out.style.color = (data.run && data.run.stderr) || (data.compile && data.compile.stderr) ? 'var(--error)' : '#d1d1d1';
+            document.getElementById('exec-time').innerText = `${elapsed}s` + (truncated ? ' (truncated)' : '');
+
         } catch (err) {
-            out.innerHTML = `<span style="color:var(--error)">Execution Failed: Backend unreachable.</span>`;
+            if (err.name === 'AbortError') {
+                out.innerHTML = `<span style="color:var(--error)">Execution timed out after ${RUN_TIMEOUT/1000}s.</span>`;
+            } else {
+                out.innerHTML = `<span style="color:var(--error)">Execution Failed: ${escapeHtml(err.message)}</span>`;
+            }
+        } finally {
+            clearTimeout(timeout);
+            runBtn.disabled = false; runBtn.style.opacity = '';
         }
     }
 
     // 3. PROJECT MGMT & UI
     function switchFile(name) {
+        if (!files[name]) return;
         activeFile = name;
-        editor.setValue(files[name].content);
+        try { editor.setValue(files[name].content); } catch(e) { console.error(e); }
+        // map to monaco language ids
         const lang = files[name].lang === 'html' ? 'html' : 
                      files[name].lang === 'python' ? 'python' : 
-                     files[name].lang === 'java' ? 'java' : 'cpp';
-        monaco.editor.setModelLanguage(editor.getModel(), lang);
+                     files[name].lang === 'java' ? 'java' : 
+                     files[name].lang === 'lua' ? 'lua' : 
+                     files[name].lang === 'cpp' ? 'cpp' : 'plaintext';
+        try { monaco.editor.setModelLanguage(editor.getModel(), lang); } catch(e) { /* ignore */ }
         renderFileList();
         renderTabs();
     }
@@ -282,7 +353,9 @@
             const div = document.createElement('div');
             div.className = `file-item ${name === activeFile ? 'active' : ''}`;
             const icon = name.endsWith('.html') ? 'fa-brands fa-html5' : 
-                         name.endsWith('.py') ? 'fa-brands fa-python' : 'fa-solid fa-file-code';
+                         name.endsWith('.py') ? 'fa-brands fa-python' : 
+                         name.endsWith('.java') ? 'fa-brands fa-java' : 
+                         name.endsWith('.lua') ? 'fa-brands fa-lua' : 'fa-solid fa-file-code';
             div.innerHTML = `<i class="${icon}"></i> ${name}`;
             div.onclick = () => switchFile(name);
             container.appendChild(div);
@@ -316,15 +389,19 @@
         if (Object.keys(files).length > 1) {
             delete files[name];
             switchFile(Object.keys(files)[0]);
+        } else {
+            alert('Cannot delete the last file.');
         }
     }
 
     // 4. SHARING (Base64 URL)
     function shareProject() {
-        const state = btoa(JSON.stringify(files));
-        const url = window.location.origin + window.location.pathname + "?project=" + state;
-        navigator.clipboard.writeText(url);
-        alert("Share link copied! Send this to your classmates.");
+        try {
+            const state = btoa(JSON.stringify(files));
+            const url = window.location.origin + window.location.pathname + "?project=" + state;
+            navigator.clipboard.writeText(url);
+            alert("Share link copied! Send this to your classmates.");
+        } catch(e) { alert('Share failed: project too large. Export instead.'); }
     }
 
     function checkURLShare() {
@@ -338,7 +415,7 @@
     }
 
     // UI UTILS
-    function saveState() { localStorage.setItem('dc_v12_fs', JSON.stringify(files)); }
+    function saveState() { try { localStorage.setItem('dc_v12_fs', JSON.stringify(files)); } catch(e) { console.error('Save failed', e); } }
     function closeOnboarding() { document.getElementById('onboarding').style.display = 'none'; }
     function clearOutput() { document.getElementById('output').innerText = ''; }
     function showStatus(msg) { document.getElementById('output').innerText = `# SYSTEM: ${msg}`; }
@@ -346,7 +423,7 @@
     function toggleTheme() {
         document.body.classList.toggle('light-theme');
         const isLight = document.body.classList.contains('light-theme');
-        monaco.editor.setTheme(isLight ? 'vs' : 'vs-dark');
+        try { monaco.editor.setTheme(isLight ? 'vs' : 'vs-dark'); } catch(e) {}
     }
 
     // CONSOLE RESIZER
@@ -371,6 +448,16 @@
         a.download = "dunstons-project-v12.json";
         a.click();
     }
+
+    // lightweight history placeholder
+    function showHistory() {
+        alert('Snapshots are stored in your browser. Use Export to save externally.');
+    }
+
+    // ensure the run shortcut won't trigger browser save dialogs
+    window.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveState(); showStatus('Snapshot saved to Browser Storage.'); }
+    });
 </script>
 </body>
 </html>

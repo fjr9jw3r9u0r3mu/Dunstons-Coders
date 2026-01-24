@@ -3,212 +3,446 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dunstons-Coder v18 | Nexus</title>
+    <title>Dunstons-Coder v19 | </title>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
 
     <style>
-        :root { --bg-dark: #09090b; --bg-panel: #18181b; --border: #27272a; --accent: #22c55e; }
+        :root { --bg-dark: #09090b; --bg-panel: #121214; --border: #27272a; --accent: #22c55e; }
         body { background: var(--bg-dark); color: #e4e4e7; font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; }
+        
+        /* MONACO THEME FIXES */
         .monaco-editor { padding-top: 10px; }
-        #terminal-output { font-family: 'Fira Code', monospace; font-size: 13px; line-height: 1.5; white-space: pre-wrap; }
-        .modal-anim { animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-        @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        /* TERMINAL STYLING */
+        #terminal-output { 
+            font-family: 'Fira Code', monospace; font-size: 13px; line-height: 1.6; 
+            scroll-behavior: smooth; white-space: pre-wrap;
+        }
+        .ansi-red { color: #f87171; font-weight: bold; }
+        .ansi-green { color: #4ade80; }
+        .ansi-cyan { color: #22d3ee; }
+
+        /* TAB SYSTEM */
+        .tab-active { background: #1e1e1e; border-top: 2px solid var(--accent); color: var(--accent); }
+        
+        /* ANIMATION */
+        .fade-in { animation: fadeIn 0.2s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
-        .ansi-red { color: #f87171; } .ansi-green { color: #4ade80; }
+
         iframe { background: white; width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body class="flex flex-col select-none">
 
-    <header class="h-14 bg-[#18181b] border-b border-[#27272a] flex items-center justify-between px-4 z-20 shadow-md">
-        <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-gradient-to-br from-green-500 to-green-700 rounded flex items-center justify-center shadow-lg">
-                <i class="fa-solid fa-code text-white text-sm"></i>
+    <header class="h-14 bg-[#18181b] border-b border-[#27272a] flex items-center justify-between px-4 z-20 shadow-xl">
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2">
+                <div class="w-9 h-9 bg-green-600 rounded-lg flex items-center justify-center shadow-lg shadow-green-900/40">
+                    <i class="fa-solid fa-terminal text-white"></i>
+                </div>
+                <div>
+                    <h1 class="font-black text-lg leading-none text-white tracking-tighter">DUNSTONS-<span class="text-green-500">CODER</span></h1>
+                    <div class="text-[9px] text-gray-500 font-mono tracking-widest">v19.0 FOUNDER'S EDITION</div>
+                </div>
             </div>
-            <div>
-                <h1 class="font-bold text-lg leading-none text-white uppercase tracking-tighter">DUNSTONS-<span class="text-green-500">CODER</span></h1>
-                <div class="text-[9px] text-gray-500 font-mono tracking-widest uppercase">v18.0 NEXUS | BY DUNSTON</div>
+            <div class="h-8 w-px bg-[#27272a]"></div>
+            <div class="flex items-center gap-2">
+                <select id="project-selector" onchange="switchProject(this.value)" class="bg-[#09090b] text-xs text-green-400 border border-[#27272a] px-2 py-1 rounded outline-none focus:border-green-500">
+                    </select>
+                <button onclick="createNewProject()" class="text-gray-500 hover:text-white text-xs" title="New Project Folder"><i class="fa-solid fa-folder-plus"></i></button>
             </div>
         </div>
 
-        <div class="flex items-center gap-2">
-            <button onclick="openModal('mission')" class="bg-indigo-600/10 text-indigo-400 hover:bg-indigo-600 hover:text-white border border-indigo-600/50 px-3 py-1.5 rounded text-xs font-bold transition flex items-center gap-2">
-                <i class="fa-solid fa-rocket"></i> MISSIONS
+        <div class="flex items-center gap-3">
+            <button onclick="openModal('mission')" class="group relative flex items-center gap-2 px-3 py-1.5 bg-indigo-600/10 hover:bg-indigo-600 text-indigo-400 hover:text-white border border-indigo-600/30 rounded text-xs font-bold transition-all">
+                <i class="fa-solid fa-flag-checkered"></i> MISSIONS
             </button>
-            <button onclick="openModal('about')" class="bg-[#27272a] hover:bg-[#3f3f46] text-gray-300 px-3 py-1.5 rounded text-xs font-bold transition flex items-center gap-2">
-                <i class="fa-solid fa-user-graduate"></i> FOUNDER
+            <button onclick="openModal('about')" class="flex items-center gap-2 px-3 py-1.5 bg-[#27272a] hover:bg-[#3f3f46] text-gray-300 rounded text-xs font-bold transition-all">
+                <i class="fa-solid fa-user-shield"></i> FOUNDER
             </button>
-            <div class="h-6 w-px bg-[#3f3f46] mx-1"></div>
-            <button onclick="saveProject()" class="text-green-500 hover:text-green-400 p-2" title="Save Project"><i class="fa-solid fa-floppy-disk"></i></button>
+            <div class="h-8 w-px bg-[#27272a]"></div>
+            <button onclick="exportProject()" class="text-gray-400 hover:text-white transition" title="Export Project (.json)"><i class="fa-solid fa-download"></i></button>
+            <button onclick="saveAll()" class="w-10 h-10 flex items-center justify-center bg-green-600/10 text-green-500 hover:bg-green-600 hover:text-white rounded-full transition-all" title="Save All Changes (Ctrl+S)">
+                <i class="fa-solid fa-floppy-disk"></i>
+            </button>
         </div>
     </header>
 
     <div class="flex flex-1 overflow-hidden">
+        
         <aside class="w-64 bg-[#09090b] border-r border-[#27272a] flex flex-col flex-shrink-0">
-            <div class="p-3 border-b border-[#27272a]">
-                <button onclick="createNewFile()" class="w-full bg-[#27272a] hover:bg-[#3f3f46] text-xs py-2 rounded text-white border border-[#3f3f46] font-bold">+ NEW FILE</button>
-            </div>
-            <div id="file-list" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
-            
-            <div class="p-3 border-t border-[#27272a] bg-[#0c0c0e]">
-                <div class="text-[9px] text-gray-500 font-bold uppercase mb-2 tracking-widest">Compiler Settings</div>
-                <select id="lang-select" onchange="updateLang()" class="w-full bg-[#27272a] text-xs text-white p-2 rounded outline-none border border-[#3f3f46] mb-3">
-                    <option value="python">Python 3.10</option>
-                    <option value="cpp">C++ (Pthread Fix)</option>
-                    <option value="java">Java 15</option>
-                    <option value="javascript">Node.js</option>
-                    <option value="html">HTML Webview</option>
-                </select>
-                <button id="run-btn" onclick="runCode()" class="w-full bg-green-600 hover:bg-green-500 text-white py-2.5 rounded text-sm font-black transition flex items-center justify-center gap-2 shadow-lg shadow-green-900/20">
-                    <i class="fa-solid fa-play"></i> RUN CODE
+            <div class="p-3 flex gap-2 border-b border-[#27272a]">
+                <button onclick="createNewFile()" class="flex-1 bg-[#27272a] hover:bg-[#3f3f46] text-[11px] py-1.5 rounded text-white font-bold border border-[#3f3f46]">
+                    <i class="fa-solid fa-file-circle-plus mr-1"></i> FILE
                 </button>
+                <button onclick="importProject()" class="bg-[#27272a] hover:bg-[#3f3f46] px-3 py-1.5 rounded text-white border border-[#3f3f46]"><i class="fa-solid fa-file-import text-[11px]"></i></button>
+            </div>
+
+            <div class="p-2 overflow-y-auto flex-1 space-y-0.5" id="file-tree">
+                </div>
+
+            <div class="p-4 bg-[#121214] border-t border-[#27272a]">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-green-600 to-emerald-400 flex items-center justify-center text-xs font-black text-white">DB</div>
+                    <div class="overflow-hidden">
+                        <div class="text-[10px] text-gray-400 font-bold uppercase truncate">Dunston J. Bandasa</div>
+                        <div class="text-[9px] text-green-500 font-mono italic">Founder & Form 3 Student</div>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center text-[10px] text-gray-500">
+                        <span>Language Engine</span>
+                        <span class="text-green-500" id="current-lang-display">Python 3</span>
+                    </div>
+                    <button id="run-btn" onclick="runCode()" class="w-full bg-green-600 hover:bg-green-500 text-white py-2.5 rounded text-xs font-black transition-all flex items-center justify-center gap-2 shadow-lg shadow-green-900/20">
+                        <i class="fa-solid fa-bolt"></i> EXECUTE CODE
+                    </button>
+                </div>
             </div>
         </aside>
 
         <main class="flex-1 flex flex-col min-w-0 bg-[#1e1e1e]">
-            <div id="tabs-bar" class="flex bg-[#18181b] border-b border-[#27272a] overflow-x-auto h-9"></div>
+            <div id="tabs-bar" class="flex bg-[#121214] border-b border-[#27272a] overflow-x-auto h-10 items-end">
+                </div>
             <div id="editor-container" class="flex-1 relative"></div>
+            
+            <div class="h-6 bg-green-600 text-white flex items-center justify-between px-3 text-[10px] font-bold">
+                <div class="flex gap-4">
+                    <span><i class="fa-solid fa-code-branch"></i> master</span>
+                    <span id="editor-stats">Line 1, Col 1</span>
+                </div>
+                <div class="flex gap-4">
+                    <span id="sync-status">All changes saved</span>
+                    <span>UTF-8</span>
+                </div>
+            </div>
         </main>
 
-        <div class="w-1/3 bg-[#09090b] border-l border-[#27272a] flex flex-col flex-shrink-0">
-            <div class="h-9 bg-[#18181b] border-b border-[#27272a] flex items-center justify-between px-3">
-                <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Output Console</span>
-                <button onclick="clearConsole()" class="text-xs text-gray-500 hover:text-white"><i class="fa-solid fa-trash-can"></i></button>
-            </div>
-            <div id="view-console" class="flex-1 flex flex-col h-full overflow-hidden">
-                <div id="terminal-output" class="flex-1 p-3 overflow-y-auto text-gray-300"></div>
-            </div>
-            <div id="view-webview" class="flex-1 hidden h-full bg-white"><iframe id="web-frame"></iframe></div>
-        </div>
-    </div>
-
-    <div id="modal-overlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        
-        <div id="modal-mission" class="bg-[#18181b] w-full max-w-2xl rounded-xl border border-[#27272a] shadow-2xl modal-anim hidden flex flex-col p-6">
-            <h2 class="text-xl font-bold text-white mb-4"><i class="fa-solid fa-crosshairs text-indigo-500 mr-2"></i>Mission Control</h2>
-            <div id="mission-list" class="space-y-3"></div>
-            <button onclick="closeModals()" class="mt-6 text-gray-500 hover:text-white text-sm">Close</button>
-        </div>
-
-        <div id="modal-about" class="bg-[#18181b] w-full max-w-md rounded-xl border border-[#27272a] shadow-2xl modal-anim hidden flex flex-col p-6 text-center">
-            <div class="w-20 h-20 bg-green-500/20 rounded-full mx-auto flex items-center justify-center mb-4 border border-green-500/50">
-                <i class="fa-solid fa-graduation-cap text-3xl text-green-500"></i>
-            </div>
-            <h2 class="text-2xl font-black text-white uppercase tracking-tight">DUNSTON jude bandasa</h2>
-            <p class="text-green-500 font-bold mb-4 italic">Form 3 Student & Founder</p>
-            <p class="text-sm text-gray-400 leading-relaxed mb-6">
-                "Our mission is to help the world learn coding for free with no limitations."
-            </p>
-            <div class="bg-[#09090b] p-4 rounded-lg border border-[#27272a] flex items-center justify-between mb-6">
-                <div class="flex items-center gap-3">
-                    <i class="fa-brands fa-discord text-indigo-400"></i>
-                    <span class="text-sm font-mono text-white">Dunten</span>
+        <div id="resizer" class="w-1.5 bg-black hover:bg-green-600 cursor-col-resize transition-colors"></div>
+        <div id="output-panel" class="w-1/3 bg-[#09090b] border-l border-[#27272a] flex flex-col flex-shrink-0 overflow-hidden">
+            <div class="h-10 bg-[#121214] border-b border-[#27272a] flex items-center justify-between px-4">
+                <div class="flex gap-4 h-full">
+                    <button onclick="toggleOutput('console')" id="tab-console" class="text-[11px] font-black tracking-widest text-white border-b-2 border-green-500 h-full">TERMINAL</button>
+                    <button onclick="toggleOutput('preview')" id="tab-preview" class="text-[11px] font-black tracking-widest text-gray-500 hover:text-white h-full">WEB PREVIEW</button>
                 </div>
-                <span class="text-[10px] text-gray-500 font-bold uppercase">Discord Contact</span>
+                <div class="flex items-center gap-2">
+                    <button onclick="copyOutput()" class="text-gray-500 hover:text-white text-xs" title="Copy Output"><i class="fa-solid fa-copy"></i></button>
+                    <button onclick="clearConsole()" class="text-gray-500 hover:text-red-500 text-xs" title="Clear Console"><i class="fa-solid fa-circle-xmark"></i></button>
+                </div>
             </div>
-            <button onclick="closeModals()" class="w-full bg-[#27272a] hover:bg-[#3f3f46] text-white py-2 rounded font-bold transition">BACK TO CODE</button>
+
+            <div id="console-view" class="flex-1 flex flex-col h-full overflow-hidden p-4">
+                <div id="terminal-output" class="flex-1 overflow-y-auto">
+                    <div class="text-cyan-500 font-bold mb-2">>> Dunstons-Coder System Initialized...</div>
+                    <div class="text-gray-500 text-xs">Ready for input. Use the Missions tab to start learning.</div>
+                </div>
+            </div>
+
+            <div id="preview-view" class="flex-1 hidden h-full bg-white">
+                <iframe id="web-frame" sandbox="allow-scripts"></iframe>
+            </div>
         </div>
     </div>
+
+    <div id="modal-overlay" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 hidden flex items-center justify-center p-6">
+        
+        <div id="modal-mission" class="bg-[#121214] w-full max-w-3xl rounded-xl border border-[#27272a] shadow-2xl fade-in hidden flex flex-col max-h-[80vh]">
+            <div class="p-6 border-b border-[#27272a] flex justify-between items-center">
+                <div>
+                    <h2 class="text-2xl font-black text-white">CODING MISSIONS</h2>
+                    <p class="text-xs text-gray-500">Master every language one mission at a time.</p>
+                </div>
+                <button onclick="closeModals()" class="text-gray-500 hover:text-white text-xl">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto grid grid-cols-2 gap-4" id="mission-grid">
+                </div>
+        </div>
+
+        <div id="modal-about" class="bg-[#121214] w-full max-w-md rounded-2xl border border-[#27272a] shadow-2xl fade-in hidden p-8 text-center">
+            <div class="w-24 h-24 bg-green-500/10 rounded-full mx-auto flex items-center justify-center mb-6 border border-green-500/30">
+                <i class="fa-solid fa-user-graduate text-4xl text-green-500"></i>
+            </div>
+            <h2 class="text-2xl font-black text-white mb-2 uppercase tracking-tight">DUNSTON Jude Bandasa</h2>
+            <div class="bg-green-600/10 text-green-400 text-[10px] font-black py-1 px-3 rounded-full inline-block mb-6 border border-green-600/20">FORM 3 STUDENT & VISIONARY</div>
+            
+            <p class="text-sm text-gray-400 leading-relaxed mb-8">
+                "I believe that coding is the language of the future. My goal with Dunstons-Coder is to ensure that no student is limited by their computer or their pocket. The world should learn for free."
+            </p>
+
+            <div class="bg-[#09090b] p-4 rounded-xl border border-[#27272a] flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-indigo-600 rounded flex items-center justify-center"><i class="fa-brands fa-discord text-white"></i></div>
+                    <div class="text-left">
+                        <div class="text-[10px] text-gray-500 font-bold uppercase">Contact via Discord</div>
+                        <div class="text-sm font-black text-white">Dunten</div>
+                    </div>
+                </div>
+                <button onclick="closeModals()" class="bg-white text-black text-xs font-black px-4 py-2 rounded hover:bg-green-500 transition-colors">SUPPORT</button>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="import-input" class="hidden" accept=".json">
 
     <script>
-        let editor; 
-        let files = JSON.parse(localStorage.getItem('dc_v18_nexus')) || [
-            { id: '1', name: 'hello.py', lang: 'python', content: 'print("Welcome to Dunstons-Coder Nexus")\nprint("Mission: Free coding for everyone.")' }
-        ];
-        let activeId = files[0].id;
+        // ==========================================
+        // 1. CORE SYSTEM STATE
+        // ==========================================
+        let editor;
+        let currentProjectId = 'default';
+        let projects = JSON.parse(localStorage.getItem('dc_projects_v19')) || {
+            'default': {
+                name: 'Main Project',
+                files: [{ id: 'init', name: 'main.py', lang: 'python', content: 'print("Welcome to v19, Founder Dunston!")\n# Start coding here...' }]
+            }
+        };
+        let activeFileId = projects[currentProjectId].files[0].id;
 
-        window.addEventListener('load', () => { initMonaco(); renderMissions(); });
+        const MISSIONS = [
+            { id: 'm1', title: 'Python: The Fibonacci Loop', lang: 'python', desc: 'Generate the first 10 Fibonacci numbers.', code: 'a, b = 0, 1\nfor _ in range(10):\n    print(a)\n    a, b = b, a + b' },
+            { id: 'm2', title: 'C++: Thread Spawner', lang: 'cpp', desc: 'Create 5 threads that print their ID.', code: '#include <iostream>\n#include <thread>\n#include <vector>\n\nvoid task(int id) { std::cout << "Thread " << id << " active\\n"; }\n\nint main() {\n    std::vector<std::thread> t;\n    for(int i=0; i<5; i++) t.push_back(std::thread(task, i));\n    for(auto& th : t) th.join();\n    return 0;\n}' },
+            { id: 'm3', title: 'HTML: Glassmorphism', lang: 'html', desc: 'Create a frosted glass card effect.', code: '<div style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 50px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2); color: white; font-family: sans-serif;">\n  <h1>Frosted Glass</h1>\n</div>' }
+        ];
+
+        // ==========================================
+        // 2. INITIALIZATION
+        // ==========================================
+        window.onload = () => {
+            initMonaco();
+            updateProjectList();
+            renderMissions();
+        };
 
         function initMonaco() {
             require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }});
-            require(['vs/editor/editor.main'], function() {
+            require(['vs/editor/editor.main'], () => {
+                const activeFile = getActiveFile();
                 editor = monaco.editor.create(document.getElementById('editor-container'), {
-                    value: files.find(f => f.id === activeId).content,
-                    language: getLang(files.find(f => f.id === activeId).lang),
-                    theme: 'vs-dark', automaticLayout: true, fontSize: 14, fontFamily: 'Fira Code', minimap: { enabled: false }
+                    value: activeFile.content,
+                    language: mapLang(activeFile.lang),
+                    theme: 'vs-dark',
+                    automaticLayout: true,
+                    fontSize: 14,
+                    fontFamily: 'Fira Code',
+                    minimap: { enabled: false },
+                    smoothScrolling: true,
+                    cursorSmoothCaretAnimation: "on"
                 });
+
                 editor.onDidChangeModelContent(() => {
-                    files.find(f => f.id === activeId).content = editor.getValue();
-                    localStorage.setItem('dc_v18_nexus', JSON.stringify(files));
+                    const f = getActiveFile();
+                    f.content = editor.getValue();
+                    saveAll();
                 });
+
                 renderUI();
             });
         }
 
+        // ==========================================
+        // 3. EXECUTION ENGINE (PISTON v2)
+        // ==========================================
         async function runCode() {
-            const f = files.find(x => x.id === activeId);
+            const f = getActiveFile();
             const term = document.getElementById('terminal-output');
-            const btn = document.getElementById('run-btn');
+            const runBtn = document.getElementById('run-btn');
             
             if(f.lang === 'html') {
-                document.getElementById('view-console').classList.add('hidden');
-                document.getElementById('view-webview').classList.remove('hidden');
+                toggleOutput('preview');
                 document.getElementById('web-frame').srcdoc = f.content;
                 return;
             }
 
-            document.getElementById('view-console').classList.remove('hidden');
-            document.getElementById('view-webview').classList.add('hidden');
-            term.innerHTML = '<div class="text-yellow-500"><i class="fa-solid fa-circle-notch spin"></i> Executing...</div>';
-            btn.disabled = true;
+            toggleOutput('console');
+            runBtn.disabled = true;
+            runBtn.innerHTML = '<i class="fa-solid fa-spinner spin"></i> RUNNING...';
+            term.innerHTML += `<div class="text-gray-500 mt-2">[Executing ${f.name}...]</div>`;
 
-            let payload = { language: f.lang, version: "*", files: [{ content: f.content }] };
+            let payload = {
+                language: f.lang,
+                version: "*",
+                files: [{ content: f.content }]
+            };
+
+            // C++ THREAD LINKER FIX
             if(f.lang === 'cpp') {
                 payload.language = "bash";
-                payload.files = [{ name: "r.sh", content: "g++ -pthread m.cpp -o m && ./m" }, { name: "m.cpp", content: f.content }];
+                payload.files = [
+                    { name: "build.sh", content: `g++ -pthread source.cpp -o app && ./app` },
+                    { name: "source.cpp", content: f.content }
+                ];
             }
+            // JAVA MAIN CLASS FIX
+            if(f.lang === 'java') payload.files[0].name = "Main.java";
 
             try {
-                const res = await fetch('https://emkc.org/api/v2/piston/execute', { method: 'POST', body: JSON.stringify(payload) });
+                const res = await fetch('https://emkc.org/api/v2/piston/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
                 const data = await res.json();
-                term.innerHTML = '';
                 
                 if(data.run) {
                     const out = data.run.stdout || '';
                     const err = data.run.stderr || '';
-                    if(!out && !err) {
-                        term.innerHTML = '<div class="text-gray-500 border border-gray-800 p-2 rounded"><b>Process finished with no output.</b><br>Try adding a print() or cout statement to see a result.</div>';
-                    } else {
-                        term.innerHTML = `<span class="text-white">${escape(out)}</span><span class="ansi-red">${escape(err)}</span>`;
-                    }
+                    
+                    if(out) term.innerHTML += `<div class="text-white">${ansiToHtml(out)}</div>`;
+                    if(err) term.innerHTML += `<div class="ansi-red">${ansiToHtml(err)}</div>`;
+                    if(!out && !err) term.innerHTML += `<div class="text-gray-500 italic">No output returned.</div>`;
                 }
-            } catch(e) { term.innerHTML = `<span class="ansi-red">API Network Error.</span>`; }
-            btn.disabled = false;
+            } catch (e) {
+                term.innerHTML += `<div class="ansi-red">System Fail: ${e.message}</div>`;
+            }
+
+            runBtn.disabled = false;
+            runBtn.innerHTML = '<i class="fa-solid fa-bolt"></i> EXECUTE CODE';
+            term.scrollTop = term.scrollHeight;
         }
 
+        // ==========================================
+        // 4. UI HANDLERS
+        // ==========================================
         function renderUI() {
-            const list = document.getElementById('file-list');
-            const tabs = document.getElementById('tabs-bar');
-            list.innerHTML = ''; tabs.innerHTML = '';
-            files.forEach(f => {
-                const active = f.id === activeId;
-                list.innerHTML += `<div onclick="switchFile('${f.id}')" class="p-2 rounded text-xs cursor-pointer flex justify-between group ${active ? 'bg-[#27272a] border-l-2 border-green-500 text-white' : 'text-gray-500'}"><span>${f.name}</span></div>`;
-                tabs.innerHTML += `<div onclick="switchFile('${f.id}')" class="px-4 py-2 text-xs border-r border-[#27272a] cursor-pointer h-full flex items-center ${active ? 'bg-[#1e1e1e] text-green-400 border-t-2 border-green-500' : 'text-gray-500'}">${f.name}</div>`;
+            const fileTree = document.getElementById('file-tree');
+            const tabsBar = document.getElementById('tabs-bar');
+            fileTree.innerHTML = ''; tabsBar.innerHTML = '';
+
+            projects[currentProjectId].files.forEach(f => {
+                const isActive = f.id === activeFileId;
+                
+                // Sidebar item
+                const item = document.createElement('div');
+                item.className = `flex justify-between items-center p-2 rounded cursor-pointer group text-xs ${isActive ? 'bg-green-600/10 text-green-400' : 'text-gray-500 hover:bg-white/5'}`;
+                item.onclick = () => switchFile(f.id);
+                item.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <i class="${getIcon(f.lang)}"></i> ${f.name}
+                    </div>
+                    <button onclick="deleteFile(event, '${f.id}')" class="opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity"><i class="fa-solid fa-xmark"></i></button>
+                `;
+                fileTree.appendChild(item);
+
+                // Tab item
+                const tab = document.createElement('div');
+                tab.className = `px-4 py-2 text-[11px] font-bold cursor-pointer transition-all border-r border-[#27272a] h-full flex items-center gap-2 ${isActive ? 'tab-active' : 'bg-[#09090b] text-gray-600 hover:text-gray-300'}`;
+                tab.innerHTML = `<i class="${getIcon(f.lang)}"></i> ${f.name}`;
+                tab.onclick = () => switchFile(f.id);
+                tabsBar.appendChild(tab);
             });
-            document.getElementById('lang-select').value = files.find(f => f.id === activeId).lang;
+
+            document.getElementById('current-lang-display').innerText = getActiveFile().lang.toUpperCase();
         }
 
-        function switchFile(id) { activeId = id; const f = files.find(x => x.id === id); editor.setValue(f.content); monaco.editor.setModelLanguage(editor.getModel(), getLang(f.lang)); renderUI(); }
-        function createNewFile() { const n = prompt("Filename:", "script.py"); if(n) { files.push({id: Date.now().toString(), name: n, lang: n.split('.').pop() === 'py' ? 'python' : 'cpp', content: ''}); switchFile(files[files.length-1].id); } }
-        function openModal(id) { document.getElementById('modal-overlay').classList.remove('hidden'); document.getElementById(`modal-${id}`).classList.remove('hidden'); }
-        function closeModals() { document.getElementById('modal-overlay').classList.add('hidden'); document.querySelectorAll('.modal-anim').forEach(m => m.classList.add('hidden')); }
-        function getLang(l) { return l === 'py' ? 'python' : (l === 'js' ? 'javascript' : l); }
-        function escape(t) { return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
-        function clearConsole() { document.getElementById('terminal-output').innerHTML = ''; }
-        function saveProject() { localStorage.setItem('dc_v18_nexus', JSON.stringify(files)); alert("Project Saved to Local Browser."); }
+        function switchFile(id) {
+            activeFileId = id;
+            const f = getActiveFile();
+            editor.setValue(f.content);
+            monaco.editor.setModelLanguage(editor.getModel(), mapLang(f.lang));
+            renderUI();
+        }
+
+        function createNewFile() {
+            const name = prompt("Filename (e.g. server.js):", "script.py");
+            if(!name) return;
+            const lang = name.split('.').pop();
+            const newFile = { id: Date.now().toString(), name, lang, content: '' };
+            projects[currentProjectId].files.push(newFile);
+            switchFile(newFile.id);
+        }
+
+        function switchProject(id) {
+            currentProjectId = id;
+            activeFileId = projects[id].files[0].id;
+            switchFile(activeFileId);
+        }
+
+        function createNewProject() {
+            const name = prompt("Project Name:", "New School Project");
+            if(!name) return;
+            const id = Date.now().toString();
+            projects[id] = { name, files: [{ id: '1', name: 'main.py', lang: 'python', content: '# Welcome' }] };
+            updateProjectList();
+            switchProject(id);
+        }
+
+        // ==========================================
+        // 5. UTILS & MODALS
+        // ==========================================
+        function getActiveFile() {
+            return projects[currentProjectId].files.find(f => f.id === activeFileId);
+        }
+
+        function updateProjectList() {
+            const sel = document.getElementById('project-selector');
+            sel.innerHTML = '';
+            for(let id in projects) {
+                sel.innerHTML += `<option value="${id}" ${id === currentProjectId ? 'selected' : ''}>${projects[id].name}</option>`;
+            }
+        }
+
+        function toggleOutput(type) {
+            document.getElementById('console-view').classList.toggle('hidden', type !== 'console');
+            document.getElementById('preview-view').classList.toggle('hidden', type !== 'preview');
+            document.getElementById('tab-console').className = type === 'console' ? "text-[11px] font-black tracking-widest text-white border-b-2 border-green-500 h-full" : "text-[11px] font-black tracking-widest text-gray-500 hover:text-white h-full";
+            document.getElementById('tab-preview').className = type === 'preview' ? "text-[11px] font-black tracking-widest text-white border-b-2 border-green-500 h-full" : "text-[11px] font-black tracking-widest text-gray-500 hover:text-white h-full";
+        }
 
         function renderMissions() {
-            const m = [{t: "The Starter", d: "Learn to output data", c: 'print("I am a coder now.")'}];
-            const l = document.getElementById('mission-list');
-            l.innerHTML = '';
-            m.forEach(i => {
-                l.innerHTML += `<div onclick="loadM('${i.c}')" class="p-3 bg-[#27272a] rounded border border-[#3f3f46] hover:border-green-500 cursor-pointer transition"><div class="font-bold text-white text-sm">${i.t}</div><div class="text-[10px] text-gray-500">${i.d}</div></div>`;
+            const grid = document.getElementById('mission-grid');
+            MISSIONS.forEach(m => {
+                grid.innerHTML += `
+                    <div onclick="loadMission('${m.id}')" class="bg-[#09090b] p-4 rounded-xl border border-[#27272a] hover:border-indigo-500 transition-all cursor-pointer group">
+                        <div class="text-[10px] text-indigo-400 font-black mb-1 uppercase tracking-tighter">${m.lang}</div>
+                        <div class="text-sm font-bold text-white mb-2">${m.title}</div>
+                        <p class="text-[11px] text-gray-500 group-hover:text-gray-300 transition-colors">${m.desc}</p>
+                    </div>
+                `;
             });
         }
-        function loadM(c) { files.push({id: Date.now().toString(), name: "mission.py", lang: "python", content: c}); switchFile(files[files.length-1].id); closeModals(); }
+
+        function loadMission(id) {
+            const m = MISSIONS.find(x => x.id === id);
+            const newFile = { id: Date.now().toString(), name: `mission_${m.lang}.py`, lang: m.lang, content: m.code };
+            projects[currentProjectId].files.push(newFile);
+            closeModals();
+            switchFile(newFile.id);
+        }
+
+        function openModal(id) { document.getElementById('modal-overlay').classList.remove('hidden'); document.getElementById(`modal-${id}`).classList.remove('hidden'); }
+        function closeModals() { document.getElementById('modal-overlay').classList.add('hidden'); document.getElementById('modal-mission').classList.add('hidden'); document.getElementById('modal-about').classList.add('hidden'); }
+        function saveAll() { localStorage.setItem('dc_projects_v19', JSON.stringify(projects)); }
+        function mapLang(l) { return l === 'js' ? 'javascript' : (l === 'py' ? 'python' : l); }
+        function getIcon(l) { return l === 'py' ? 'fa-brands fa-python text-blue-400' : (l === 'cpp' ? 'fa-solid fa-c text-gray-400' : 'fa-solid fa-code text-green-400'); }
+        function ansiToHtml(t) { return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+        function clearConsole() { document.getElementById('terminal-output').innerHTML = ''; }
+        function copyOutput() { navigator.clipboard.writeText(document.getElementById('terminal-output').innerText); alert("Output copied!"); }
+        function exportProject() { const blob = new Blob([JSON.stringify(projects)], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'dunston_coder_backup.json'; a.click(); }
+        function importProject() { document.getElementById('import-input').click(); }
+        document.getElementById('import-input').onchange = (e) => {
+            const fr = new FileReader();
+            fr.onload = () => { projects = JSON.parse(fr.result); updateProjectList(); renderUI(); };
+            fr.readAsText(e.target.files[0]);
+        };
+
+        // Resizer Logic
+        const resizer = document.getElementById('resizer');
+        const outputPanel = document.getElementById('output-panel');
+        resizer.addEventListener('mousedown', (e) => {
+            document.addEventListener('mousemove', resize);
+            document.addEventListener('mouseup', stopResize);
+        });
+        function resize(e) {
+            const newWidth = window.innerWidth - e.clientX;
+            if (newWidth > 200 && newWidth < 800) outputPanel.style.width = newWidth + 'px';
+        }
+        function stopResize() { document.removeEventListener('mousemove', resize); }
+
     </script>
 </body>
 </html>

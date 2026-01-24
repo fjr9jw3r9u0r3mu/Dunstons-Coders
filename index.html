@@ -3,251 +3,238 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dunstons-Coder | Professional Online IDE</title>
+    <title>Dunstons-Coder | Elite Development Environment</title>
     <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs/editor/editor.main.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         :root {
-            --bg: #0d1117; --panel: #161b22; --accent: #00ff41; 
-            --border: #30363d; --text: #c9d1d9; --editor-bg: #1e1e1e;
-            --header-h: 60px; --sidebar-w: 280px;
+            --bg: #05070a; --panel: #0d1117; --accent: #00ff41; 
+            --border: #2b3238; --text: #e6edf3; --vs-bg: #1e1e1e;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body, html { 
             height: 100%; background: var(--bg); color: var(--text);
-            font-family: -apple-system, system-ui, sans-serif; overflow: hidden;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif; overflow: hidden;
         }
 
-        /* 1. Immediate Visibility Layout */
-        .app-wrapper { display: flex; flex-direction: column; height: 100vh; }
-
+        /* 1. HEADER & CONTROLS (Always Visible) */
         .header {
-            height: var(--header-h); background: var(--panel); border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 1000;
+            height: 60px; background: var(--panel); border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+            z-index: 1000; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
         }
 
-        .main-content { flex: 1; display: flex; min-height: 0; }
+        .logo { font-weight: 900; color: var(--accent); letter-spacing: 2px; font-size: 20px; }
 
-        /* 2. Enhanced Sidebar (Project Mgmt & Help) */
-        .sidebar {
-            width: var(--sidebar-w); background: var(--panel); border-right: 1px solid var(--border);
-            display: flex; flex-direction: column; overflow-y: auto; transition: 0.3s;
+        /* 5. ACTUAL LANGUAGE CONTROLS */
+        .lang-selector {
+            background: #1a2025; color: var(--accent); border: 1px solid var(--border);
+            padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; outline: none;
         }
 
-        /* 3. Editor & Terminal (Visible by default) */
-        .editor-container { flex: 1; display: flex; flex-direction: column; background: var(--editor-bg); min-width: 0; }
-        #monaco-editor { flex: 1; width: 100%; border-bottom: 1px solid var(--border); }
-
-        .preview-pane { width: 35%; display: flex; flex-direction: column; background: #000; }
-        
-        /* 4. Console/Output UI */
-        .panel-header {
-            background: #0d1117; padding: 10px 15px; font-size: 11px; font-weight: bold;
-            color: var(--accent); border-bottom: 1px solid var(--border);
-            display: flex; justify-content: space-between; align-items: center;
-        }
-
-        iframe { flex: 1; width: 100%; border: none; background: white; }
-        #terminal { 
-            flex: 1; padding: 15px; font-family: 'Consolas', monospace; color: var(--accent); 
-            font-size: 13px; overflow-y: auto; white-space: pre-wrap; background: #000;
-        }
-
-        /* 5. UI Elements & Tooltips */
+        .btn-group { display: flex; gap: 10px; }
         .btn {
-            background: #21262d; color: var(--text); border: 1px solid var(--border);
-            padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;
-            display: flex; align-items: center; gap: 6px; transition: 0.2s;
+            background: #1a2025; color: var(--text); border: 1px solid var(--border);
+            padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;
+            font-size: 12px; display: flex; align-items: center; gap: 8px; transition: 0.2s;
         }
-        .btn:hover { border-color: var(--accent); background: #30363d; }
-        .btn-run { background: var(--accent); color: #000; border: none; font-weight: bold; padding: 8px 20px; }
+        .btn:hover { border-color: var(--accent); background: #252b32; }
+        .btn-run { background: var(--accent); color: #000; border: none; }
+        .btn-run:hover { background: #00cc33; transform: scale(1.05); }
+
+        /* 2. MAIN WORKSPACE (Hard-coded Layout) */
+        .app-body { display: flex; height: calc(100vh - 60px); width: 100%; }
+
+        /* 1. EDITOR SECTION (Visible on Load) */
+        .editor-container {
+            flex: 1; display: flex; flex-direction: column; background: var(--vs-bg);
+            border-right: 1px solid var(--border); min-width: 0;
+        }
+        #monaco-container { flex: 1; width: 100%; height: 100%; background: #1e1e1e; }
+
+        /* 2. CONSOLE/OUTPUT AREA (Visible on Load) */
+        .output-container { width: 40%; display: flex; flex-direction: column; background: #000; }
         
-        .help-box { 
-            margin: 15px; padding: 15px; background: rgba(0,255,65,0.05); 
-            border: 1px dashed var(--accent); border-radius: 8px; font-size: 12px;
+        .output-header {
+            background: #0d1117; padding: 10px 15px; font-size: 11px; font-weight: 800;
+            color: var(--accent); border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between;
         }
 
-        /* Full Screen Engine */
-        .full-mode { position: fixed !important; inset: 0 !important; z-index: 999999 !important; width: 100vw !important; height: 100vh !important; }
-
-        /* Mobile Responsiveness */
-        @media (max-width: 900px) {
-            .main-content { flex-direction: column; }
-            .sidebar { width: 100%; height: auto; display: none; }
-            .preview-pane { width: 100%; height: 40%; }
+        #web-view { flex: 1; width: 100%; border: none; background: #fff; display: block; }
+        #terminal-view { 
+            flex: 1; padding: 20px; font-family: 'Consolas', monospace; color: var(--accent);
+            font-size: 14px; overflow-y: auto; white-space: pre-wrap; display: none;
         }
+
+        /* 4. DOCUMENTATION/HELP BOX (Fixed into HTML) */
+        .sidebar-help {
+            width: 250px; background: var(--panel); border-right: 1px solid var(--border);
+            padding: 20px; font-size: 13px; overflow-y: auto;
+        }
+        .help-card {
+            background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px;
+            margin-bottom: 15px; border-left: 3px solid var(--accent);
+        }
+
+        /* Mission Modal */
+        .modal {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+            z-index: 99999; place-items: center; backdrop-filter: blur(10px);
+        }
+        .modal-content {
+            background: var(--panel); border: 1px solid var(--border); padding: 40px;
+            border-radius: 20px; text-align: center; max-width: 500px;
+        }
+
+        /* FULL SCREEN OVERLAY */
+        .full-mode { position: fixed !important; inset: 0 !important; z-index: 100000 !important; width: 100vw !important; height: 100vh !important; }
     </style>
 </head>
 <body>
 
-<div class="app-wrapper">
     <header class="header">
-        <div style="display:flex; align-items:center; gap:15px">
-            <h1 style="font-size:18px; color:var(--accent)">DUNSTONS-CODER</h1>
-            <select id="langSelect" class="btn" onchange="changeLanguage()">
-                <option value="html">Web (HTML/CSS/JS)</option>
-                <option value="python">Python 3 (Sandbox)</option>
-                <option value="java">Java (Compiler)</option>
-                <option value="cpp">C++ (Clang)</option>
-                <option value="lua">Lua</option>
+        <div style="display:flex; align-items:center; gap:20px">
+            <div class="logo">DUNSTONS-CODER</div>
+            <select id="langSelect" class="lang-selector" onchange="switchLanguage()">
+                <option value="html">WEB PREVIEW</option>
+                <option value="python">PYTHON 3</option>
+                <option value="java">JAVA 17</option>
+                <option value="cpp">C++ 20</option>
+                <option value="lua">LUA</option>
             </select>
         </div>
-        <div style="display:flex; gap:10px">
-            <button class="btn" id="autoBtn" onclick="toggleAuto()"><i class="fa-solid fa-bolt"></i> AUTO: OFF</button>
-            <button class="btn" onclick="saveFile()"><i class="fa-solid fa-download"></i> DOWNLOAD</button>
-            <button class="btn" onclick="toggleFull()"><i class="fa-solid fa-expand"></i> FULL PREVIEW</button>
-            <button class="btn btn-run" onclick="runCode()">RUN CODE ▶</button>
+        <div class="btn-group">
+            <button class="btn" onclick="downloadCode()"><i class="fa-solid fa-download"></i> SAVE</button>
+            <button class="btn" onclick="toggleFull()"><i class="fa-solid fa-expand"></i> FULL SCREEN</button>
+            <button class="btn" onclick="openMission()"><i class="fa-solid fa-rocket"></i> MISSION</button>
+            <button class="btn btn-run" onclick="execute()"><i class="fa-solid fa-play"></i> RUN CODE</button>
         </div>
     </header>
 
-    <main class="main-content">
-        <aside class="sidebar" id="sidebar">
-            <div class="help-box">
-                <p><strong>💡 Quick Guide:</strong></p>
-                <ul style="margin: 5px 0 0 15px;">
-                    <li>Type code in the center.</li>
-                    <li>Results appear on the right.</li>
-                    <li>ESC exits Full Screen.</li>
-                </ul>
+    <main class="app-body">
+        <aside class="sidebar-help">
+            <h3 style="margin-bottom:15px; font-size:12px; opacity:0.6">DOCS & HELP</h3>
+            <div class="help-card">
+                <strong>Running Code</strong><br>
+                Press the green "RUN" button to execute. Web code renders in the browser; Logic code in the terminal.
             </div>
-            
-            <div style="padding:10px 20px; font-size:11px; font-weight:bold; color:#8b949e">PROJECTS (LOCAL STORAGE)</div>
-            <div id="projList" style="flex:1"></div>
-            <button class="btn" style="margin:15px; justify-content:center" onclick="addProject()">+ NEW PROJECT</button>
-
-            <div style="padding:20px; border-top:1px solid var(--border); font-size:11px;">
-                <p><strong>Security:</strong> All code runs in a secure server-side sandbox (Piston API).</p>
-                <br>
-                <a href="#" style="color:var(--accent)" onclick="alert('Mission: Free coding for all students worldwide.')">Mission & Privacy</a>
+            <div class="help-card">
+                <strong>Auto-Save</strong><br>
+                Your progress is stored locally in your browser automatically.
+            </div>
+            <div class="help-card">
+                <strong>Shortcuts</strong><br>
+                Use ESC to exit Full Screen mode instantly.
             </div>
         </aside>
 
         <section class="editor-container">
-            <div id="monaco-editor"></div>
+            <div id="monaco-container">
+                <div style="padding:20px; color:#555;">Initializing Elite Editor Engine...</div>
+            </div>
         </section>
 
-        <section class="preview-pane" id="previewPane">
-            <div class="panel-header">
-                <span id="outputLabel">LIVE OUTPUT</span>
-                <span onclick="clearTerminal()" style="cursor:pointer; opacity:0.6">CLEAR</span>
+        <section class="output-container" id="outputPane">
+            <div class="output-header">
+                <span id="outputTitle">LIVE PREVIEW</span>
+                <span style="opacity:0.5; cursor:pointer" onclick="clearOutput()">CLEAR</span>
             </div>
-            <iframe id="webOutput"></iframe>
-            <div id="terminal" style="display:none;"></div>
+            <iframe id="web-view"></iframe>
+            <div id="terminal-view"></div>
         </section>
     </main>
-</div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
-<script>
-    // 6 & 11. Project Management & Backend Execution
-    let editor, activeProj = 'Default';
-    let isAuto = false, timer;
-    let storage = JSON.parse(localStorage.getItem('DC_V8_STORE')) || {
-        'Default': { code: '\n<h1>Code Loaded Instantly</h1>\n<p>Try typing here...</p>', lang: 'html' }
-    };
+    <div class="modal" id="missionModal">
+        <div class="modal-content">
+            <h1 style="color:var(--accent); margin-bottom:10px;">The Mission</h1>
+            <p style="text-align:left; line-height:1.6; font-size:15px; margin-bottom:20px;">
+                <strong>Dunston Jude Bandasa</strong> founded Dunstons-Coder to provide an unrestricted, world-class development environment for students everywhere. Our goal is to empower the next generation of software engineers by removing every barrier to high-end technology.
+            </p>
+            <button class="btn btn-run" style="width:100%; justify-content:center; padding:15px" onclick="closeMission()">LET'S BUILD</button>
+        </div>
+    </div>
 
-    require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs' }});
-    require(['vs/editor/editor.main'], function() {
-        // 1. Immediate Editor Load
-        editor = monaco.editor.create(document.getElementById('monaco-editor'), {
-            value: storage[activeProj].code,
-            language: storage[activeProj].lang,
-            theme: 'vs-dark',
-            automaticLayout: true,
-            fontSize: 14,
-            minimap: { enabled: false }
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
+    <script>
+        let editor;
+        const DEFAULT_CODE = "\n<h1 style='color:green'>System Online</h1>\n<p>Start typing your masterpiece.</p>";
+        
+        // Load the Advanced Editor Engine
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs' }});
+        require(['vs/editor/editor.main'], function() {
+            editor = monaco.editor.create(document.getElementById('monaco-container'), {
+                value: localStorage.getItem('dc_code') || DEFAULT_CODE,
+                language: localStorage.getItem('dc_lang') || 'html',
+                theme: 'vs-dark',
+                automaticLayout: true,
+                fontSize: 15,
+                minimap: { enabled: false },
+                cursorSmoothCaretAnimation: true,
+                smoothScrolling: true
+            });
+
+            editor.onDidChangeModelContent(() => {
+                localStorage.setItem('dc_code', editor.getValue());
+            });
+
+            execute(); // Run on first load
         });
 
-        editor.onDidChangeModelContent(() => {
-            storage[activeProj].code = editor.getValue();
-            localStorage.setItem('DC_V8_STORE', JSON.stringify(storage));
-            if(isAuto) { clearTimeout(timer); timer = setTimeout(runCode, 1000); }
-        });
+        async function execute() {
+            const code = editor.getValue();
+            const lang = document.getElementById('langSelect').value;
+            const web = document.getElementById('web-view');
+            const term = document.getElementById('terminal-view');
+            const title = document.getElementById('outputTitle');
 
-        renderProjects();
-        runCode(); // 3. Output visible immediately
-    });
-
-    async function runCode() {
-        const code = editor.getValue();
-        const lang = document.getElementById('langSelect').value;
-        const web = document.getElementById('webOutput');
-        const term = document.getElementById('terminal');
-        const label = document.getElementById('outputLabel');
-
-        if(lang === 'html') {
-            label.textContent = "LIVE WEB PREVIEW";
-            term.style.display = 'none'; web.style.display = 'block';
-            web.srcdoc = code;
-        } else {
-            label.textContent = "TERMINAL (PISTON API)";
-            web.style.display = 'none'; term.style.display = 'block';
-            term.textContent = "> Running Code...";
-            try {
-                const res = await fetch('https://emkc.org/api/v2/piston/execute', {
-                    method: 'POST',
-                    body: JSON.stringify({ language: lang, version: "*", files: [{ content: code }] })
-                });
-                const data = await res.json();
-                term.textContent = data.run.output || data.run.stderr || "> Executed (No Output).";
-            } catch(e) { term.textContent = "> Error connecting to Backend Execution Server."; }
+            if(lang === 'html') {
+                title.textContent = "LIVE PREVIEW";
+                term.style.display = 'none'; web.style.display = 'block';
+                web.srcdoc = code;
+            } else {
+                title.textContent = "SECURE TERMINAL";
+                web.style.display = 'none'; term.style.display = 'block';
+                term.textContent = "> Executing on Advanced Remote Core...\n";
+                
+                try {
+                    const res = await fetch('https://emkc.org/api/v2/piston/execute', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            language: lang, version: "*",
+                            files: [{ content: code }]
+                        })
+                    });
+                    const data = await res.json();
+                    term.textContent = data.run.output || data.run.stderr || "> Execution finished (No output).";
+                } catch(e) { term.textContent = "Error: High-performance core unreachable."; }
+            }
         }
-    }
 
-    // UI Functions
-    function changeLanguage() {
-        const l = document.getElementById('langSelect').value;
-        monaco.editor.setModelLanguage(editor.getModel(), l);
-        storage[activeProj].lang = l;
-        runCode();
-    }
+        // 5. LANGUAGE SWAPPING
+        function switchLanguage() {
+            const lang = document.getElementById('langSelect').value;
+            monaco.editor.setModelLanguage(editor.getModel(), lang);
+            localStorage.setItem('dc_lang', lang);
+            execute();
+        }
 
-    function renderProjects() {
-        const list = document.getElementById('projList');
-        list.innerHTML = '';
-        Object.keys(storage).forEach(name => {
-            const div = document.createElement('div');
-            div.style.padding = '10px 20px';
-            div.style.cursor = 'pointer';
-            div.style.fontSize = '13px';
-            div.style.background = name === activeProj ? 'rgba(0,255,65,0.1)' : 'transparent';
-            div.style.borderLeft = name === activeProj ? '3px solid var(--accent)' : '3px solid transparent';
-            div.innerHTML = `<i class="fa-regular fa-file-code"></i> ${name}`;
-            div.onclick = () => {
-                activeProj = name;
-                editor.setValue(storage[name].code);
-                document.getElementById('langSelect').value = storage[name].lang;
-                renderProjects();
-                runCode();
-            };
-            list.appendChild(div);
-        });
-    }
+        function toggleFull() { document.getElementById('outputPane').classList.toggle('full-mode'); }
+        function openMission() { document.getElementById('missionModal').style.display = 'grid'; }
+        function closeMission() { document.getElementById('missionModal').style.display = 'none'; }
+        function clearOutput() { document.getElementById('terminal-view').textContent = ''; document.getElementById('web-view').srcdoc = ''; }
+        
+        function downloadCode() {
+            const blob = new Blob([editor.getValue()], {type: 'text/plain'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = "project-source.txt";
+            a.click();
+        }
 
-    function addProject() {
-        const n = prompt("Name:");
-        if(n) { storage[n] = {code: '', lang: 'html'}; activeProj = n; renderProjects(); }
-    }
-
-    function toggleAuto() {
-        isAuto = !isAuto;
-        document.getElementById('autoBtn').style.color = isAuto ? 'var(--accent)' : 'white';
-        document.getElementById('autoBtn').innerHTML = `<i class="fa-solid fa-bolt"></i> AUTO: ${isAuto ? 'ON' : 'OFF'}`;
-    }
-
-    function toggleFull() { document.getElementById('previewPane').classList.toggle('full-mode'); }
-    function clearTerminal() { document.getElementById('terminal').textContent = ''; }
-    function saveFile() {
-        const blob = new Blob([editor.getValue()], {type: 'text/plain'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = activeProj + ".txt";
-        a.click();
-    }
-    
-    window.addEventListener('keydown', e => { if(e.key === 'Escape') document.getElementById('previewPane').classList.remove('full-mode'); });
-</script>
+        window.addEventListener('keydown', e => { if(e.key === 'Escape') document.getElementById('outputPane').classList.remove('full-mode'); });
+    </script>
 </body>
 </html>

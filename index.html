@@ -3,238 +3,248 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dunstons-Coder | Elite Development Environment</title>
-    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs/editor/editor.main.min.css">
+    <title>Dunstons-Coder | World-Class Student IDE</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs/editor/editor.main.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
+    
     <style>
         :root {
             --bg: #05070a; --panel: #0d1117; --accent: #00ff41; 
-            --border: #2b3238; --text: #e6edf3; --vs-bg: #1e1e1e;
+            --border: #2b3238; --text: #e6edf3; --tab-active: #1e1e1e;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body, html { 
-            height: 100%; background: var(--bg); color: var(--text);
-            font-family: 'Inter', system-ui, -apple-system, sans-serif; overflow: hidden;
+        body, html { height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; overflow: hidden; }
+
+        /* UI GRID */
+        .app-container { display: grid; grid-template-rows: 50px 1fr 220px; height: 100vh; }
+
+        /* HEADER & TOOLBAR */
+        header { background: var(--panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; }
+        .logo { font-weight: 900; color: var(--accent); font-size: 18px; letter-spacing: 1px; }
+        .toolbar { display: flex; gap: 8px; }
+
+        /* TABS SYSTEM */
+        .tabs-bar { background: #090c10; display: flex; overflow-x: auto; border-bottom: 1px solid var(--border); }
+        .tab { 
+            padding: 8px 20px; font-size: 12px; cursor: pointer; border-right: 1px solid var(--border); 
+            display: flex; align-items: center; gap: 10px; background: #161b22; transition: 0.2s;
+        }
+        .tab.active { background: var(--tab-active); border-bottom: 2px solid var(--accent); }
+        .tab:hover { background: #1f242c; }
+
+        /* MAIN AREA */
+        .main-workspace { display: flex; height: 100%; overflow: hidden; }
+        #sidebar { width: 200px; background: var(--panel); border-right: 1px solid var(--border); padding: 15px; }
+        #editor-target { flex: 1; height: 100%; }
+
+        /* OUTPUT AREA */
+        #console-container { background: #000; display: flex; flex-direction: column; border-top: 1px solid var(--border); }
+        .console-header { 
+            background: #0d1117; padding: 5px 15px; font-size: 11px; font-weight: bold; 
+            display: flex; justify-content: space-between; color: var(--accent);
+        }
+        #output-terminal { flex: 1; padding: 15px; font-family: 'Consolas', monospace; font-size: 13px; overflow-y: auto; color: #fff; white-space: pre-wrap; }
+
+        /* BUTTONS */
+        .btn { 
+            background: #21262d; color: var(--text); border: 1px solid var(--border); padding: 6px 12px; 
+            border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .btn:hover { border-color: var(--accent); background: #30363d; }
+        .btn-run { background: var(--accent); color: #000; border: none; padding: 6px 20px; }
+        .btn-run:hover { background: #00cc33; transform: translateY(-1px); }
+
+        /* TOOLTIPS & ONBOARDING */
+        [title]:hover::after {
+            content: attr(title); position: absolute; top: 45px; background: #30363d; padding: 5px 10px;
+            border-radius: 4px; font-size: 10px; z-index: 99; white-space: nowrap;
         }
 
-        /* 1. HEADER & CONTROLS (Always Visible) */
-        .header {
-            height: 60px; background: var(--panel); border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
-            z-index: 1000; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-        }
-
-        .logo { font-weight: 900; color: var(--accent); letter-spacing: 2px; font-size: 20px; }
-
-        /* 5. ACTUAL LANGUAGE CONTROLS */
-        .lang-selector {
-            background: #1a2025; color: var(--accent); border: 1px solid var(--border);
-            padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; outline: none;
-        }
-
-        .btn-group { display: flex; gap: 10px; }
-        .btn {
-            background: #1a2025; color: var(--text); border: 1px solid var(--border);
-            padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;
-            font-size: 12px; display: flex; align-items: center; gap: 8px; transition: 0.2s;
-        }
-        .btn:hover { border-color: var(--accent); background: #252b32; }
-        .btn-run { background: var(--accent); color: #000; border: none; }
-        .btn-run:hover { background: #00cc33; transform: scale(1.05); }
-
-        /* 2. MAIN WORKSPACE (Hard-coded Layout) */
-        .app-body { display: flex; height: calc(100vh - 60px); width: 100%; }
-
-        /* 1. EDITOR SECTION (Visible on Load) */
-        .editor-container {
-            flex: 1; display: flex; flex-direction: column; background: var(--vs-bg);
-            border-right: 1px solid var(--border); min-width: 0;
-        }
-        #monaco-container { flex: 1; width: 100%; height: 100%; background: #1e1e1e; }
-
-        /* 2. CONSOLE/OUTPUT AREA (Visible on Load) */
-        .output-container { width: 40%; display: flex; flex-direction: column; background: #000; }
-        
-        .output-header {
-            background: #0d1117; padding: 10px 15px; font-size: 11px; font-weight: 800;
-            color: var(--accent); border-bottom: 1px solid var(--border);
-            display: flex; justify-content: space-between;
-        }
-
-        #web-view { flex: 1; width: 100%; border: none; background: #fff; display: block; }
-        #terminal-view { 
-            flex: 1; padding: 20px; font-family: 'Consolas', monospace; color: var(--accent);
-            font-size: 14px; overflow-y: auto; white-space: pre-wrap; display: none;
-        }
-
-        /* 4. DOCUMENTATION/HELP BOX (Fixed into HTML) */
-        .sidebar-help {
-            width: 250px; background: var(--panel); border-right: 1px solid var(--border);
-            padding: 20px; font-size: 13px; overflow-y: auto;
-        }
-        .help-card {
-            background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px;
-            margin-bottom: 15px; border-left: 3px solid var(--accent);
-        }
-
-        /* Mission Modal */
-        .modal {
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9);
-            z-index: 99999; place-items: center; backdrop-filter: blur(10px);
-        }
-        .modal-content {
-            background: var(--panel); border: 1px solid var(--border); padding: 40px;
-            border-radius: 20px; text-align: center; max-width: 500px;
-        }
-
-        /* FULL SCREEN OVERLAY */
-        .full-mode { position: fixed !important; inset: 0 !important; z-index: 100000 !important; width: 100vw !important; height: 100vh !important; }
+        /* JAVA LOGIC WARNING */
+        .java-hint { font-size: 10px; color: #8b949e; margin-top: 10px; line-height: 1.3; }
     </style>
 </head>
 <body>
 
-    <header class="header">
-        <div style="display:flex; align-items:center; gap:20px">
-            <div class="logo">DUNSTONS-CODER</div>
-            <select id="langSelect" class="lang-selector" onchange="switchLanguage()">
-                <option value="html">WEB PREVIEW</option>
-                <option value="python">PYTHON 3</option>
-                <option value="java">JAVA 17</option>
-                <option value="cpp">C++ 20</option>
-                <option value="lua">LUA</option>
-            </select>
-        </div>
-        <div class="btn-group">
-            <button class="btn" onclick="downloadCode()"><i class="fa-solid fa-download"></i> SAVE</button>
-            <button class="btn" onclick="toggleFull()"><i class="fa-solid fa-expand"></i> FULL SCREEN</button>
-            <button class="btn" onclick="openMission()"><i class="fa-solid fa-rocket"></i> MISSION</button>
-            <button class="btn btn-run" onclick="execute()"><i class="fa-solid fa-play"></i> RUN CODE</button>
+<div class="app-container">
+    <header>
+        <div class="logo">DUNSTONS-CODER <small style="font-size:9px; opacity:0.5">V11.0 PRO</small></div>
+        <div class="toolbar">
+            <button class="btn" title="Create a shareable link" onclick="shareProject()"><i class="fa-solid fa-share-nodes"></i> SHARE</button>
+            <button class="btn" title="Download source" onclick="downloadProject()"><i class="fa-solid fa-download"></i> EXPORT</button>
+            <button class="btn" title="Toggle Light/Dark" onclick="toggleTheme()"><i class="fa-solid fa-circle-half-stroke"></i></button>
+            <button class="btn btn-run" title="Execute Code (Ctrl+Enter)" onclick="runProject()">RUN <i class="fa-solid fa-play"></i></button>
         </div>
     </header>
 
-    <main class="app-body">
-        <aside class="sidebar-help">
-            <h3 style="margin-bottom:15px; font-size:12px; opacity:0.6">DOCS & HELP</h3>
-            <div class="help-card">
-                <strong>Running Code</strong><br>
-                Press the green "RUN" button to execute. Web code renders in the browser; Logic code in the terminal.
-            </div>
-            <div class="help-card">
-                <strong>Auto-Save</strong><br>
-                Your progress is stored locally in your browser automatically.
-            </div>
-            <div class="help-card">
-                <strong>Shortcuts</strong><br>
-                Use ESC to exit Full Screen mode instantly.
+    <div class="main-workspace">
+        <aside id="sidebar">
+            <div style="font-size:11px; font-weight:bold; margin-bottom:10px; opacity:0.6">FILES</div>
+            <div id="file-list"></div>
+            <button class="btn" style="width:100%; margin-top:10px;" onclick="createNewFile()">+ New File</button>
+            
+            <div class="java-hint">
+                <strong>Pro Tip (Java):</strong><br>Always name your main class <code>Main</code> for the compiler to work.
             </div>
         </aside>
 
-        <section class="editor-container">
-            <div id="monaco-container">
-                <div style="padding:20px; color:#555;">Initializing Elite Editor Engine...</div>
-            </div>
-        </section>
-
-        <section class="output-container" id="outputPane">
-            <div class="output-header">
-                <span id="outputTitle">LIVE PREVIEW</span>
-                <span style="opacity:0.5; cursor:pointer" onclick="clearOutput()">CLEAR</span>
-            </div>
-            <iframe id="web-view"></iframe>
-            <div id="terminal-view"></div>
-        </section>
-    </main>
-
-    <div class="modal" id="missionModal">
-        <div class="modal-content">
-            <h1 style="color:var(--accent); margin-bottom:10px;">The Mission</h1>
-            <p style="text-align:left; line-height:1.6; font-size:15px; margin-bottom:20px;">
-                <strong>Dunston Jude Bandasa</strong> founded Dunstons-Coder to provide an unrestricted, world-class development environment for students everywhere. Our goal is to empower the next generation of software engineers by removing every barrier to high-end technology.
-            </p>
-            <button class="btn btn-run" style="width:100%; justify-content:center; padding:15px" onclick="closeMission()">LET'S BUILD</button>
+        <div style="flex:1; display:flex; flex-direction:column;">
+            <div class="tabs-bar" id="tabs-bar"></div>
+            <div id="editor-target"></div>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
-    <script>
-        let editor;
-        const DEFAULT_CODE = "\n<h1 style='color:green'>System Online</h1>\n<p>Start typing your masterpiece.</p>";
-        
-        // Load the Advanced Editor Engine
-        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs' }});
-        require(['vs/editor/editor.main'], function() {
-            editor = monaco.editor.create(document.getElementById('monaco-container'), {
-                value: localStorage.getItem('dc_code') || DEFAULT_CODE,
-                language: localStorage.getItem('dc_lang') || 'html',
-                theme: 'vs-dark',
-                automaticLayout: true,
-                fontSize: 15,
-                minimap: { enabled: false },
-                cursorSmoothCaretAnimation: true,
-                smoothScrolling: true
-            });
+    <div id="console-container">
+        <div class="console-header">
+            <span>CONSOLE OUTPUT</span>
+            <span onclick="clearOutput()" style="cursor:pointer; opacity:0.5">CLEAR</span>
+        </div>
+        <div id="output-terminal">Ready. Select a file to begin coding...</div>
+    </div>
+</div>
 
-            editor.onDidChangeModelContent(() => {
-                localStorage.setItem('dc_code', editor.getValue());
-            });
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
+<script>
+    let editor, files = {}, activeFile = 'index.html';
+    
+    // 5. STARTER TEMPLATES
+    const TEMPLATES = {
+        'index.html': { lang: 'html', content: '<h1>Hello Dunston!</h1>\n<p>Start your web project.</p>' },
+        'Main.java': { lang: 'java', content: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Java Engine Fixed!");\n    }\n}' },
+        'script.py': { lang: 'python', content: 'import math\nprint(f"PI is {math.pi}")\nprint("Python is ready.")' },
+        'logic.lua': { lang: 'lua', content: 'print("Hello from Lua!")' }
+    };
 
-            execute(); // Run on first load
+    // Initialize System
+    files = JSON.parse(localStorage.getItem('dc_files')) || TEMPLATES;
+
+    require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs' }});
+    require(['vs/editor/editor.main'], function() {
+        editor = monaco.editor.create(document.getElementById('editor-target'), {
+            theme: 'vs-dark',
+            automaticLayout: true,
+            fontSize: 14,
+            minimap: { enabled: false },
+            padding: { top: 15 }
         });
 
-        async function execute() {
-            const code = editor.getValue();
-            const lang = document.getElementById('langSelect').value;
-            const web = document.getElementById('web-view');
-            const term = document.getElementById('terminal-view');
-            const title = document.getElementById('outputTitle');
+        // 6. KEYBOARD SHORTCUTS
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, runProject);
+        editor.onDidChangeModelContent(() => {
+            files[activeFile].content = editor.getValue();
+            localStorage.setItem('dc_files', JSON.stringify(files));
+        });
 
-            if(lang === 'html') {
-                title.textContent = "LIVE PREVIEW";
-                term.style.display = 'none'; web.style.display = 'block';
-                web.srcdoc = code;
-            } else {
-                title.textContent = "SECURE TERMINAL";
-                web.style.display = 'none'; term.style.display = 'block';
-                term.textContent = "> Executing on Advanced Remote Core...\n";
-                
-                try {
-                    const res = await fetch('https://emkc.org/api/v2/piston/execute', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            language: lang, version: "*",
-                            files: [{ content: code }]
-                        })
-                    });
-                    const data = await res.json();
-                    term.textContent = data.run.output || data.run.stderr || "> Execution finished (No output).";
-                } catch(e) { term.textContent = "Error: High-performance core unreachable."; }
-            }
+        renderTabs();
+        switchFile(Object.keys(files)[0]);
+        checkURLShare();
+    });
+
+    // 1. JAVA FIX & 7. SECURITY EXECUTION
+    async function runProject() {
+        const out = document.getElementById('output-terminal');
+        const file = files[activeFile];
+        out.innerHTML = `<span style="color:gray">> Building ${activeFile}...</span>\n`;
+
+        if (file.lang === 'html') {
+            const win = window.open();
+            win.document.write(file.content);
+            out.innerHTML += `> Web preview opened in new window.`;
+            return;
         }
 
-        // 5. LANGUAGE SWAPPING
-        function switchLanguage() {
-            const lang = document.getElementById('langSelect').value;
-            monaco.editor.setModelLanguage(editor.getModel(), lang);
-            localStorage.setItem('dc_lang', lang);
-            execute();
+        try {
+            const res = await fetch('https://emkc.org/api/v2/piston/execute', {
+                method: 'POST',
+                body: JSON.stringify({
+                    language: file.lang,
+                    version: "*",
+                    files: [{ name: activeFile, content: file.content }]
+                })
+            });
+            const data = await res.json();
+            const result = data.run.stdout || data.run.stderr || "Program finished with no output.";
+            out.innerHTML = `<span style="${data.run.stderr ? 'color:#ff6b6b' : ''}">${result}</span>`;
+        } catch (e) {
+            out.innerHTML = `<span style="color:red">Execution Error: System core unreachable.</span>`;
         }
+    }
 
-        function toggleFull() { document.getElementById('outputPane').classList.toggle('full-mode'); }
-        function openMission() { document.getElementById('missionModal').style.display = 'grid'; }
-        function closeMission() { document.getElementById('missionModal').style.display = 'none'; }
-        function clearOutput() { document.getElementById('terminal-view').textContent = ''; document.getElementById('web-view').srcdoc = ''; }
+    // 3. PROJECT MANAGEMENT
+    function renderTabs() {
+        const bar = document.getElementById('tabs-bar');
+        const list = document.getElementById('file-list');
+        bar.innerHTML = ''; list.innerHTML = '';
         
-        function downloadCode() {
-            const blob = new Blob([editor.getValue()], {type: 'text/plain'});
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = "project-source.txt";
-            a.click();
-        }
+        Object.keys(files).forEach(name => {
+            // Render Tab
+            const tab = document.createElement('div');
+            tab.className = `tab ${name === activeFile ? 'active' : ''}`;
+            tab.innerHTML = `<span>${name}</span> <i class="fa-solid fa-xmark" style="font-size:10px" onclick="deleteFile('${name}')"></i>`;
+            tab.onclick = (e) => { if(e.target.tagName !== 'I') switchFile(name); };
+            bar.appendChild(tab);
 
-        window.addEventListener('keydown', e => { if(e.key === 'Escape') document.getElementById('outputPane').classList.remove('full-mode'); });
-    </script>
+            // Render Sidebar List
+            const item = document.createElement('div');
+            item.style = `padding:5px; font-size:12px; cursor:pointer; color:${name === activeFile ? 'var(--accent)' : 'inherit'}`;
+            item.innerHTML = `<i class="fa-regular fa-file"></i> ${name}`;
+            item.onclick = () => switchFile(name);
+            list.appendChild(item);
+        });
+    }
+
+    function switchFile(name) {
+        activeFile = name;
+        editor.setValue(files[name].content);
+        const monacoLang = files[name].lang === 'java' ? 'java' : (files[name].lang === 'python' ? 'python' : 'html');
+        monaco.editor.setModelLanguage(editor.getModel(), monacoLang);
+        renderTabs();
+    }
+
+    function createNewFile() {
+        const name = prompt("Filename (e.g. main.py, test.java):");
+        if (!name) return;
+        const ext = name.split('.').pop();
+        const langMap = { 'py': 'python', 'java': 'java', 'html': 'html', 'lua': 'lua', 'cpp': 'cpp' };
+        files[name] = { lang: langMap[ext] || 'text', content: '' };
+        switchFile(name);
+    }
+
+    // 8. ADVANCED FEATURES: SHARE VIA URL
+    function shareProject() {
+        const state = btoa(JSON.stringify(files));
+        const url = window.location.origin + window.location.pathname + "?code=" + state;
+        navigator.clipboard.writeText(url);
+        alert("Project link copied to clipboard! Anyone with this link can see your code.");
+    }
+
+    function checkURLShare() {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('code')) {
+            try {
+                files = JSON.parse(atob(params.get('code')));
+                renderTabs();
+                switchFile(Object.keys(files)[0]);
+            } catch(e) { console.error("Invalid share link"); }
+        }
+    }
+
+    function downloadProject() {
+        const blob = new Blob([editor.getValue()], {type: 'text/plain'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = activeFile;
+        a.click();
+    }
+
+    function toggleTheme() {
+        const current = editor._themeService._theme.themeName;
+        editor.updateOptions({ theme: current === 'vs-dark' ? 'vs' : 'vs-dark' });
+    }
+
+    function clearOutput() { document.getElementById('output-terminal').innerHTML = ''; }
+</script>
 </body>
 </html>

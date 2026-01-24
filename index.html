@@ -3,318 +3,332 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dunstons-Coder | Omega v21</title>
+    <title>Dunstons-Coder | Apex v22</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&family=Fira+Code:wght@400;500&display=swap');
-
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Fira+Code:wght@400;500&display=swap');
+        
         :root { 
-            --bg: #050505; --panel: #0d0d0f; --accent: #10b981; 
-            --border: #1f1f23; --text: #f4f4f5; 
+            --bg: #030303; --panel: #0a0a0c; --accent: #10b981; 
+            --border: #1a1a1e; --text: #e4e4e7; 
         }
 
-        body { 
-            background: var(--bg); color: var(--text); 
-            font-family: 'Plus Jakarta Sans', sans-serif; height: 100vh; overflow: hidden; 
-        }
-
-        /* Glassmorphism */
-        .glass { background: rgba(13, 13, 15, 0.8); backdrop-filter: blur(20px); border: 1px solid var(--border); }
-        .neon-border { box-shadow: 0 0 15px rgba(16, 185, 129, 0.2); border: 1px solid var(--accent); }
+        body { background: var(--bg); color: var(--text); font-family: 'Plus Jakarta Sans', sans-serif; height: 100vh; overflow: hidden; }
+        .monaco-editor { padding-top: 10px; }
+        .glass { background: rgba(10, 10, 12, 0.7); backdrop-filter: blur(16px); border: 1px solid var(--border); }
+        .tab-active { color: var(--accent); background: rgba(16, 185, 129, 0.08); border-bottom: 2px solid var(--accent); }
         
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
-
-        .monaco-editor { padding-top: 10px; background: transparent !important; }
-        .tab-active { color: var(--accent); border-bottom: 2px solid var(--accent); background: rgba(16, 185, 129, 0.05); }
+        /* Smooth Transitions */
+        .fade-in { animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
         
-        @keyframes pulse-green { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        .run-glow { animation: pulse-green 2s infinite; }
+        /* Command Palette Style */
+        #command-palette { z-index: 1000; top: 20%; left: 50%; transform: translateX(-50%); }
     </style>
 </head>
 <body class="flex flex-col">
 
-    <header class="h-16 border-b border-[#1f1f23] flex items-center justify-between px-6 bg-black/50 z-50">
-        <div class="flex items-center gap-8">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-gradient-to-br from-emerald-400 to-green-700 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                    <i class="fa-solid fa-atom text-black text-xl"></i>
-                </div>
-                <div>
-                    <h1 class="font-extrabold text-sm tracking-widest uppercase italic leading-none">Dunstons-<span class="text-emerald-500">Coder</span></h1>
-                    <span class="text-[9px] text-gray-500 font-bold tracking-[0.3em]">OMEGA V21.0</span>
-                </div>
-            </div>
+    <div id="command-palette" class="fixed w-[500px] glass rounded-2xl p-4 hidden shadow-2xl">
+        <input type="text" id="palette-search" placeholder="Search files... (Enter to switch)" class="w-full bg-black border border-emerald-500/30 rounded-lg p-3 outline-none text-emerald-400 font-bold placeholder:text-gray-600">
+        <div id="palette-results" class="mt-4 max-h-60 overflow-y-auto space-y-2"></div>
+    </div>
 
-            <div class="flex items-center gap-1 bg-[#121214] rounded-full p-1 border border-[#1f1f23]">
-                <button onclick="openModal('mission')" class="px-4 py-1.5 text-[10px] font-black uppercase hover:text-emerald-400 transition">Missions</button>
-                <button onclick="openModal('projects')" class="px-4 py-1.5 text-[10px] font-black uppercase hover:text-emerald-400 transition">Library</button>
-                <button onclick="openModal('founder')" class="px-4 py-1.5 text-[10px] font-black uppercase text-emerald-500 bg-emerald-500/10 rounded-full">Founder</button>
+    <header class="h-14 border-b border-[#1a1a1e] flex items-center justify-between px-6 bg-black z-50">
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
+                    <i class="fa-solid fa-bolt-lightning text-black"></i>
+                </div>
+                <h1 class="font-extrabold text-xs tracking-widest uppercase italic">Dunstons-Coder <span class="text-emerald-500">Apex</span></h1>
+            </div>
+            <div class="h-6 w-px bg-zinc-800"></div>
+            <div class="flex items-center gap-2 bg-zinc-900 px-3 py-1 rounded-full border border-zinc-800">
+                <span class="text-[10px] text-zinc-500 font-bold uppercase tracking-tighter">LVL</span>
+                <span id="lvl-display" class="text-[10px] text-emerald-500 font-black">1</span>
+                <div class="w-20 h-1 bg-zinc-800 rounded-full ml-2">
+                    <div id="xp-progress" class="h-full bg-emerald-500 transition-all duration-700" style="width: 0%"></div>
+                </div>
             </div>
         </div>
 
-        <div class="flex items-center gap-6">
-            <div class="flex flex-col items-end">
-                <div class="text-[9px] font-bold text-gray-500 uppercase">Student Rank: Level <span id="user-level" class="text-emerald-500">1</span></div>
-                <div class="w-32 h-1 bg-[#1f1f23] rounded-full mt-1 overflow-hidden">
-                    <div id="xp-bar" class="h-full bg-emerald-500 w-1/3 transition-all duration-500"></div>
-                </div>
-            </div>
-            <button onclick="exportProject()" class="w-10 h-10 flex items-center justify-center rounded-full bg-[#121214] border border-[#1f1f23] hover:border-emerald-500 text-gray-400 hover:text-white transition">
-                <i class="fa-solid fa-cloud-arrow-down"></i>
+        <div class="flex items-center gap-4">
+            <span id="sync-icon" class="text-[9px] text-zinc-500 uppercase font-black tracking-widest flex items-center gap-2">
+                <i class="fa-solid fa-cloud"></i> Synced
+            </span>
+            <button onclick="openModal('founder')" class="bg-zinc-900 border border-zinc-800 hover:border-emerald-500 text-zinc-400 hover:text-white px-4 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all">
+                The Founder
             </button>
         </div>
     </header>
 
     <div class="flex flex-1 overflow-hidden">
         
-        <aside class="w-64 bg-black border-r border-[#1f1f23] flex flex-col p-4 gap-6">
-            <div>
-                <button onclick="createNewFile()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-black py-3 rounded-xl font-extrabold text-xs uppercase transition-all transform active:scale-95 shadow-lg shadow-emerald-500/20">
-                    + New Source File
-                </button>
-            </div>
+        <aside class="w-64 bg-[#050505] border-r border-[#1a1a1e] flex flex-col p-4">
+            <button onclick="createNewFile()" class="w-full bg-white hover:bg-emerald-500 text-black py-2.5 rounded-xl font-black text-[11px] uppercase transition-all mb-6">
+                + Add Module
+            </button>
 
-            <div class="flex-1 flex flex-col gap-2">
-                <h3 class="text-[10px] font-black text-gray-600 uppercase tracking-widest px-2">Project Explorer</h3>
-                <div id="file-tree" class="space-y-1 overflow-y-auto max-h-[50vh]"></div>
-            </div>
+            <div class="flex-1 space-y-1 overflow-y-auto" id="file-list"></div>
 
-            <div class="bg-[#0d0d0f] rounded-2xl border border-[#1f1f23] p-4">
-                <label class="text-[9px] font-bold text-gray-500 uppercase block mb-2">Runtime Environment</label>
-                <select id="lang-select" onchange="updateLang()" class="w-full bg-black text-xs text-white p-3 rounded-lg border border-[#1f1f23] outline-none focus:border-emerald-500 transition">
-                    <option value="python">Python 3.10</option>
-                    <option value="cpp">C++ 20 (GCC)</option>
-                    <option value="java">Java 17 (LTS)</option>
-                    <option value="javascript">Node.js</option>
-                    <option value="html">Web View (Live)</option>
-                </select>
-                <button id="run-btn" onclick="runCode()" class="w-full mt-4 bg-white text-black py-3 rounded-lg font-black text-xs uppercase hover:bg-emerald-500 transition-all flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-play"></i> Execute
-                </button>
+            <div class="mt-auto pt-6 border-t border-zinc-900">
+                <div class="bg-zinc-950 p-4 rounded-2xl border border-zinc-900">
+                    <label class="text-[9px] font-black text-zinc-500 uppercase block mb-3">Runtime Engine</label>
+                    <select id="lang-select" onchange="handleLangChange()" class="w-full bg-black text-xs text-white p-2.5 rounded-lg border border-zinc-800 outline-none focus:border-emerald-500">
+                        <option value="python">Python 3.10</option>
+                        <option value="cpp">C++ 20</option>
+                        <option value="java">Java 17</option>
+                        <option value="javascript">Node.js</option>
+                        <option value="html">Web Preview</option>
+                    </select>
+                    <button id="run-btn" onclick="runEngine()" class="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-black text-xs uppercase transition-all shadow-lg shadow-emerald-900/20 active:scale-95">
+                        <i class="fa-solid fa-play mr-2"></i> Run Module
+                    </button>
+                </div>
             </div>
         </aside>
 
-        <main class="flex-1 flex flex-col bg-[#050505]">
-            <div id="tabs-bar" class="flex bg-black border-b border-[#1f1f23] h-12 items-center px-4 gap-2 overflow-x-auto"></div>
-            <div id="editor-container" class="flex-1 relative"></div>
-            
-            <div class="h-8 bg-[#0d0d0f] border-t border-[#1f1f23] flex items-center justify-between px-4 text-[10px] font-bold text-gray-500">
-                <div class="flex gap-4">
-                    <span><i class="fa-solid fa-check-circle text-emerald-500"></i> Local-Sync: OK</span>
-                    <span id="char-count">0 chars</span>
-                </div>
-                <div class="flex gap-4">
-                    <span class="text-emerald-500">UTF-8</span>
-                    <span>OMEGA ENGINE v21</span>
-                </div>
-            </div>
+        <main class="flex-1 flex flex-col bg-[#08080a]">
+            <div id="tabs-bar" class="flex bg-black border-b border-[#1a1a1e] h-10 items-center px-4 gap-1 overflow-x-auto"></div>
+            <div id="editor-container" class="flex-1"></div>
         </main>
 
-        <div id="resizer" class="w-1 bg-[#1f1f23] hover:bg-emerald-500 cursor-col-resize transition-colors"></div>
-        <div id="output-panel" class="w-1/3 flex flex-col bg-black border-l border-[#1f1f23]">
-            <div class="h-12 border-b border-[#1f1f23] flex items-center justify-between px-6">
+        <div id="resizer" class="w-1 bg-[#1a1a1e] hover:bg-emerald-500 cursor-col-resize transition-all"></div>
+        <div id="output-panel" class="w-1/3 flex flex-col bg-black border-l border-[#1a1a1e]">
+            <div class="h-10 border-b border-[#1a1a1e] flex items-center justify-between px-6 bg-zinc-950/50">
                 <div class="flex gap-6 h-full">
-                    <button onclick="switchOutput('term')" id="tab-term" class="text-[10px] font-black text-emerald-500 border-b-2 border-emerald-500 h-full uppercase tracking-widest">Console</button>
-                    <button onclick="switchOutput('web')" id="tab-web" class="text-[10px] font-black text-gray-500 h-full uppercase tracking-widest">Live View</button>
+                    <button onclick="toggleView('term')" id="tab-term" class="text-[10px] font-black text-emerald-500 border-b-2 border-emerald-500 h-full uppercase">Terminal</button>
+                    <button onclick="toggleView('web')" id="tab-web" class="text-[10px] font-black text-zinc-500 h-full uppercase">Live Preview</button>
                 </div>
-                <button onclick="clearConsole()" class="text-[10px] font-bold text-gray-600 hover:text-white uppercase transition">Clear</button>
+                <button onclick="clearTerm()" class="text-[10px] text-zinc-600 hover:text-white font-black uppercase">Reset</button>
             </div>
 
-            <div id="console-view" class="flex-1 p-6 overflow-y-auto font-mono text-sm">
-                <div id="terminal-output" class="text-gray-400 leading-relaxed"></div>
+            <div id="console-view" class="flex-1 p-6 overflow-y-auto">
+                <div id="terminal-output" class="font-mono text-[13px] leading-relaxed text-zinc-400"></div>
             </div>
 
-            <div id="preview-view" class="flex-1 hidden bg-white">
-                <iframe id="web-frame" class="w-full h-full"></iframe>
+            <div id="preview-view" class="flex-1 hidden bg-white overflow-hidden">
+                <iframe id="web-frame" sandbox="allow-scripts allow-same-origin" class="w-full h-full"></iframe>
             </div>
         </div>
     </div>
 
-    <div id="modal-overlay" class="fixed inset-0 bg-black/95 backdrop-blur-xl z-[100] hidden flex items-center justify-center p-6">
-        
-        <div id="modal-founder" class="bg-[#0d0d0f] w-full max-w-xl rounded-[2rem] border border-[#1f1f23] p-12 text-center relative overflow-hidden hidden">
-            <div class="absolute -top-10 -left-10 w-40 h-40 bg-emerald-500/10 blur-[100px]"></div>
-            <div class="w-28 h-28 bg-gradient-to-br from-emerald-400 to-green-600 rounded-3xl mx-auto flex items-center justify-center mb-8 rotate-12 shadow-2xl shadow-emerald-500/20">
-                <i class="fa-solid fa-crown text-black text-5xl"></i>
+    <div id="overlay" class="fixed inset-0 bg-black/95 backdrop-blur-xl z-[100] hidden flex items-center justify-center p-6" onclick="closeModals()">
+        <div id="modal-founder" class="bg-zinc-950 w-full max-w-lg rounded-[2.5rem] border border-zinc-900 p-12 text-center fade-in" onclick="event.stopPropagation()">
+            <div class="w-24 h-24 bg-emerald-500 rounded-3xl mx-auto flex items-center justify-center mb-8 rotate-3 shadow-2xl shadow-emerald-500/20">
+                <i class="fa-solid fa-user-graduate text-black text-4xl"></i>
             </div>
-            <h2 class="text-4xl font-black text-white mb-2 tracking-tighter uppercase italic">DUNSTON JUDE BANDASA</h2>
-            <p class="text-emerald-500 font-extrabold mb-8 tracking-[0.2em] text-xs uppercase">Visionary | Form 3 Student</p>
-            
-            <p class="text-gray-400 leading-relaxed mb-10 font-medium italic">
-                "I started Dunstons-Coder because I believe code is the ultimate equalizer. Every student in the world should be able to create without limits, without fees, and without barriers."
-            </p>
-
-            <div class="bg-black p-6 rounded-2xl border border-[#1f1f23] flex items-center justify-between">
-                <div class="flex items-center gap-4 text-left">
-                    <div class="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center"><i class="fa-brands fa-discord text-white text-xl"></i></div>
-                    <div>
-                        <div class="text-[10px] text-gray-500 font-bold uppercase">Community Access</div>
-                        <div class="text-md font-black text-white tracking-wide">Dunten</div>
-                    </div>
+            <h2 class="text-3xl font-black text-white mb-2 uppercase italic tracking-tighter">DUNSTON Jude Bandasa</h2>
+            <p class="text-emerald-500 font-extrabold mb-8 tracking-[0.2em] text-[10px] uppercase">Form 3 Student • Founder</p>
+            <p class="text-zinc-400 text-sm leading-relaxed mb-8 italic">"Building the future of coding education for every student on Earth."</p>
+            <div class="bg-black p-4 rounded-2xl border border-zinc-900 flex justify-between items-center text-left">
+                <div>
+                    <span class="text-[9px] text-zinc-600 uppercase font-black block">Discord ID</span>
+                    <span class="text-white font-bold">Dunten</span>
                 </div>
-                <button onclick="closeModals()" class="bg-white text-black text-[10px] font-black px-6 py-3 rounded-xl uppercase hover:bg-emerald-500 transition">Return to Mission</button>
+                <i class="fa-brands fa-discord text-zinc-800 text-2xl"></i>
             </div>
         </div>
     </div>
 
     <script>
-        // --- CORE DATA ---
-        let editor, activeId, xp = parseInt(localStorage.getItem('dc_xp')) || 0;
-        let PROJECTS = JSON.parse(localStorage.getItem('dc_omega_projects')) || {
-            'default': { name: 'Main Project', files: [{id:'1', name:'main.py', lang:'python', content:'print("Dunston-Coder Omega v21 Loaded.")\n# Start your journey here.'}] }
+        // --- 1. CONFIG & STATE ---
+        const CONFIG = {
+            SAVE_DELAY: 500,
+            PISTON_API: 'https://emkc.org/api/v2/piston/execute',
+            LANG_MAP: { py: 'python', cpp: 'cpp', java: 'java', js: 'javascript', html: 'html' }
         };
-        let curProj = 'default';
 
-        // --- INIT ---
+        let state = {
+            projects: JSON.parse(localStorage.getItem('dc_v22_data')) || {
+                'default': { files: [{ id: '1', name: 'app.py', lang: 'python', content: 'print("Apex v22 Ready.")' }] }
+            },
+            activeId: '1',
+            xp: parseInt(localStorage.getItem('dc_xp')) || 0,
+            saveTimeout: null
+        };
+
+        let editor;
+
+        // --- 2. CORE ENGINES ---
         window.onload = () => {
             initMonaco();
-            updateXP(0);
+            updateStats();
+            initListeners();
             initResizer();
         };
 
         function initMonaco() {
             require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }});
             require(['vs/editor/editor.main'], () => {
-                const f = PROJECTS[curProj].files[0];
-                activeId = f.id;
+                const f = state.projects['default'].files[0];
                 editor = monaco.editor.create(document.getElementById('editor-container'), {
                     value: f.content,
-                    language: f.lang === 'py' ? 'python' : f.lang,
+                    language: f.lang,
                     theme: 'vs-dark',
                     automaticLayout: true,
-                    fontSize: 15,
+                    fontSize: 14,
                     fontFamily: 'Fira Code',
                     minimap: { enabled: false },
-                    roundedSelection: true,
-                    scrollBeyondLastLine: false,
-                    padding: { top: 20 }
+                    padding: { top: 16 },
+                    smoothScrolling: true
                 });
 
                 editor.onDidChangeModelContent(() => {
-                    const file = PROJECTS[curProj].files.find(x => x.id === activeId);
-                    file.content = editor.getValue();
-                    document.getElementById('char-count').innerText = `${file.content.length} chars`;
-                    save();
-                    if(file.lang === 'html') document.getElementById('web-frame').srcdoc = file.content;
+                    clearTimeout(state.saveTimeout);
+                    state.saveTimeout = setTimeout(saveToStorage, CONFIG.SAVE_DELAY);
                 });
 
-                renderUI();
+                renderSidebar();
             });
         }
 
-        // --- ENGINES ---
-        async function runCode() {
-            const f = PROJECTS[curProj].files.find(x => x.id === activeId);
-            const term = document.getElementById('terminal-output');
+        async function runEngine() {
+            const f = getActiveFile();
+            if (f.lang === 'html') return toggleView('web');
+
             const btn = document.getElementById('run-btn');
-
-            if(f.lang === 'html') return switchOutput('web');
-
-            switchOutput('term');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin"></i> Linking...';
-            term.innerHTML += `<div class="text-emerald-500 font-bold mb-2">Executing ${f.name}...</div>`;
+            const term = document.getElementById('terminal-output');
+            
+            toggleView('term');
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Processing...`;
+            term.innerHTML += `<div class="text-emerald-500 font-bold">>>> Building ${f.name}...</div>`;
 
             let payload = { language: f.lang, version: "*", files: [{ content: f.content }] };
-            if(f.lang === 'cpp') {
+            if (f.lang === 'cpp') {
                 payload.language = "bash";
                 payload.files = [{ name: "r.sh", content: "g++ -pthread m.cpp -o m && ./m" }, { name: "m.cpp", content: f.content }];
             }
 
             try {
-                const res = await fetch('https://emkc.org/api/v2/piston/execute', { method: 'POST', body: JSON.stringify(payload) });
+                const res = await fetch(CONFIG.PISTON_API, { method: 'POST', body: JSON.stringify(payload) });
                 const data = await res.json();
-                if(data.run) {
-                    const output = (data.run.stdout || '') + (data.run.stderr || '');
-                    term.innerHTML += `<div class="${data.run.stderr ? 'text-red-400' : 'text-gray-300'}">${output || 'Done (No output)'}</div>`;
-                    updateXP(20);
-                }
-            } catch (e) { term.innerHTML += `<div class="text-red-500">Execution Error: Check API</div>`; }
+                const out = (data.run.stdout || '') + (data.run.stderr || '');
+                term.innerHTML += `<pre class="text-zinc-300 mt-1">${out || 'Process finished with no output.'}</pre>`;
+                addXP(20);
+            } catch (e) { term.innerHTML += `<div class="text-red-500">Backend Link Failure</div>`; }
             
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-play"></i> Execute';
+            btn.innerHTML = `<i class="fa-solid fa-play mr-2"></i> Run Module`;
             term.parentElement.scrollTop = term.parentElement.scrollHeight;
         }
 
-        function updateXP(val) {
-            xp += val;
-            localStorage.setItem('dc_xp', xp);
-            const level = Math.floor(xp / 100) + 1;
-            const progress = xp % 100;
-            document.getElementById('user-level').innerText = level;
-            document.getElementById('xp-bar').style.width = progress + '%';
+        // --- 3. UI HANDLERS ---
+        function saveToStorage() {
+            const f = getActiveFile();
+            f.content = editor.getValue();
+            localStorage.setItem('dc_v22_data', JSON.stringify(state.projects));
+            
+            // Visual Sync Indication
+            const icon = document.getElementById('sync-icon');
+            icon.innerHTML = '<i class="fa-solid fa-check text-emerald-500"></i> Saved';
+            setTimeout(() => icon.innerHTML = '<i class="fa-solid fa-cloud"></i> Synced', 1000);
+
+            if (f.lang === 'html') document.getElementById('web-frame').srcdoc = f.content;
         }
 
-        // --- UI ---
-        function renderUI() {
-            const tree = document.getElementById('file-tree');
+        function renderSidebar() {
+            const list = document.getElementById('file-list');
             const tabs = document.getElementById('tabs-bar');
-            tree.innerHTML = ''; tabs.innerHTML = '';
+            list.innerHTML = ''; tabs.innerHTML = '';
 
-            PROJECTS[curProj].files.forEach(f => {
-                const active = f.id === activeId;
-                tree.innerHTML += `<div onclick="switchFile('${f.id}')" class="p-3 rounded-xl text-[11px] cursor-pointer flex justify-between group transition-all ${active ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-lg' : 'text-gray-500 hover:bg-white/5'}">
+            state.projects['default'].files.forEach(f => {
+                const active = f.id === state.activeId;
+                list.innerHTML += `<div onclick="switchFile('${f.id}')" class="p-3 rounded-xl text-[11px] cursor-pointer flex justify-between transition-all ${active ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-lg' : 'text-zinc-500 hover:bg-zinc-900'}">
                     <span class="font-bold"><i class="fa-solid fa-file-code mr-3"></i>${f.name}</span>
                 </div>`;
                 
-                tabs.innerHTML += `<div onclick="switchFile('${f.id}')" class="px-6 py-2 text-[10px] font-black cursor-pointer uppercase transition-all flex items-center gap-2 ${active ? 'tab-active' : 'text-gray-600 hover:text-gray-300'}">
-                    ${f.name}
-                </div>`;
+                if (active) {
+                    tabs.innerHTML += `<div class="px-6 py-2 text-[10px] font-black uppercase tab-active">${f.name}</div>`;
+                    document.getElementById('lang-select').value = f.lang;
+                } else {
+                    tabs.innerHTML += `<div onclick="switchFile('${f.id}')" class="px-6 py-2 text-[10px] font-black uppercase text-zinc-500 cursor-pointer hover:text-white">${f.name}</div>`;
+                }
             });
-            document.getElementById('lang-select').value = PROJECTS[curProj].files.find(x => x.id === activeId).lang;
         }
 
         function switchFile(id) {
-            activeId = id;
-            const f = PROJECTS[curProj].files.find(x => x.id === id);
+            state.activeId = id;
+            const f = getActiveFile();
             editor.setValue(f.content);
-            monaco.editor.setModelLanguage(editor.getModel(), f.lang === 'py' ? 'python' : f.lang);
-            renderUI();
+            monaco.editor.setModelLanguage(editor.getModel(), f.lang);
+            renderSidebar();
         }
 
         function createNewFile() {
-            const n = prompt("Filename:", "logic.py");
-            if(!n) return;
-            const l = n.split('.').pop();
+            const name = prompt("Module Name (e.g. index.html):", "main.py");
+            if (!name) return;
+            const ext = name.split('.').pop();
             const id = Date.now().toString();
-            PROJECTS[curProj].files.push({ id, name: n, lang: l === 'py' ? 'python' : l, content: '' });
+            state.projects['default'].files.push({ id, name, lang: CONFIG.LANG_MAP[ext] || 'python', content: '' });
             switchFile(id);
         }
 
-        function switchOutput(t) {
-            document.getElementById('console-view').classList.toggle('hidden', t !== 'term');
-            document.getElementById('preview-view').classList.toggle('hidden', t !== 'web');
-            document.getElementById('tab-term').className = t === 'term' ? "text-[10px] font-black text-emerald-500 border-b-2 border-emerald-500 h-full uppercase tracking-widest" : "text-[10px] font-black text-gray-500 h-full uppercase tracking-widest";
-            document.getElementById('tab-web').className = t === 'web' ? "text-[10px] font-black text-emerald-500 border-b-2 border-emerald-500 h-full uppercase tracking-widest" : "text-[10px] font-black text-gray-500 h-full uppercase tracking-widest";
+        // --- 4. UTILS & UX ---
+        function getActiveFile() { return state.projects['default'].files.find(x => x.id === state.activeId); }
+        
+        function addXP(val) {
+            state.xp += val;
+            localStorage.setItem('dc_xp', state.xp);
+            updateStats();
         }
 
-        function save() { localStorage.setItem('dc_omega_projects', JSON.stringify(PROJECTS)); }
-        function openModal(id) { document.getElementById('modal-overlay').classList.remove('hidden'); document.getElementById(`modal-${id}`).classList.remove('hidden'); }
-        function closeModals() { document.getElementById('modal-overlay').classList.add('hidden'); document.querySelectorAll('[id^="modal-"]').forEach(m => m.classList.add('hidden')); }
-        function clearConsole() { document.getElementById('terminal-output').innerHTML = ''; }
-        function exportProject() { const blob = new Blob([JSON.stringify(PROJECTS)], {type: 'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'dunston_omega.json'; a.click(); }
+        function updateStats() {
+            const lvl = Math.floor(state.xp / 100) + 1;
+            document.getElementById('lvl-display').innerText = lvl;
+            document.getElementById('xp-progress').style.width = (state.xp % 100) + '%';
+        }
+
+        function toggleView(v) {
+            document.getElementById('console-view').classList.toggle('hidden', v !== 'term');
+            document.getElementById('preview-view').classList.toggle('hidden', v !== 'web');
+            document.getElementById('tab-term').className = v === 'term' ? "text-[10px] font-black text-emerald-500 border-b-2 border-emerald-500 h-full uppercase" : "text-[10px] font-black text-zinc-500 h-full uppercase";
+            document.getElementById('tab-web').className = v === 'web' ? "text-[10px] font-black text-emerald-500 border-b-2 border-emerald-500 h-full uppercase" : "text-[10px] font-black text-zinc-500 h-full uppercase";
+        }
+
+        function initListeners() {
+            // Keyboard Shortcuts
+            window.addEventListener('keydown', e => {
+                if (e.ctrlKey && e.key === 's') { e.preventDefault(); saveToStorage(); }
+                if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); runEngine(); }
+                if (e.ctrlKey && e.key === 'p') { e.preventDefault(); openPalette(); }
+                if (e.key === 'Escape') closeModals();
+            });
+
+            // Command Palette Search
+            document.getElementById('palette-search').addEventListener('input', e => {
+                const term = e.target.value.toLowerCase();
+                const res = document.getElementById('palette-results');
+                res.innerHTML = '';
+                state.projects['default'].files.filter(f => f.name.toLowerCase().includes(term)).forEach(f => {
+                    res.innerHTML += `<div onclick="switchFile('${f.id}'); closeModals();" class="p-3 bg-zinc-900 rounded-xl text-xs font-bold hover:bg-emerald-500 hover:text-black cursor-pointer">${f.name}</div>`;
+                });
+            });
+        }
+
+        function openPalette() { document.getElementById('command-palette').classList.remove('hidden'); document.getElementById('palette-search').focus(); }
+        function openModal(id) { document.getElementById('overlay').classList.remove('hidden'); document.getElementById(`modal-${id}`).classList.remove('hidden'); }
+        function closeModals() { 
+            document.getElementById('overlay').classList.add('hidden'); 
+            document.getElementById('command-palette').classList.add('hidden');
+            document.querySelectorAll('[id^="modal-"]').forEach(m => m.classList.add('hidden')); 
+        }
+        function clearTerm() { document.getElementById('terminal-output').innerHTML = ''; }
 
         function initResizer() {
             const resizer = document.getElementById('resizer');
-            const output = document.getElementById('output-panel');
-            resizer.addEventListener('mousedown', (e) => {
-                const move = (md) => {
+            const panel = document.getElementById('output-panel');
+            resizer.addEventListener('mousedown', e => {
+                const resize = (md) => {
                     const w = window.innerWidth - md.clientX;
-                    if(w > 250 && w < 900) output.style.width = w + 'px';
+                    if (w > 200 && w < 800) panel.style.width = w + 'px';
                 };
-                document.addEventListener('mousemove', move);
-                document.addEventListener('mouseup', () => document.removeEventListener('mousemove', move));
+                document.addEventListener('mousemove', resize);
+                document.addEventListener('mouseup', () => document.removeEventListener('mousemove', resize));
             });
         }
-        
-        document.getElementById('modal-overlay').onclick = (e) => { if(e.target.id === 'modal-overlay') closeModals(); };
     </script>
 </body>
 </html>

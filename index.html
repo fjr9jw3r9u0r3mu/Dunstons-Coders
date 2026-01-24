@@ -1,373 +1,238 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dunstons-Coder | Professional Student IDE</title>
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs/editor/editor.main.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
-
+    <title>Dunstons-Coder v14.0 Hyperion</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root {
-            --bg: #0d1117; --panel: #161b22; --accent: #238636; --accent-bright: #3fb950;
-            --border: #30363d; --text: #c9d1d9; --text-dim: #8b949e;
-            --header-h: 60px; --sidebar-w: 260px; --tab-h: 40px;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
-        body, html { height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; overflow: hidden; }
-
-        /* SCROLLBARS */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #484f58; }
-
-        /* LAYOUT */
-        .app-shell { display: grid; grid-template-rows: var(--header-h) 1fr; height: 100vh; }
-        
-        header { 
-            background: var(--panel); border-bottom: 1px solid var(--border); 
-            display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
-            z-index: 1000;
-        }
-        .logo-area { display: flex; align-items: center; gap: 12px; }
-        .logo-text { font-weight: 800; font-size: 1.1rem; letter-spacing: -0.5px; color: #fff; }
-        .logo-tag { background: #21262d; padding: 2px 8px; border-radius: 5px; font-size: 10px; color: var(--accent-bright); border: 1px solid var(--border); }
-
-        .main-container { display: flex; height: 100%; overflow: hidden; position: relative; }
-
-        /* SIDEBAR (Collapsible) */
-        #sidebar { 
-            width: var(--sidebar-w); background: var(--panel); border-right: 1px solid var(--border);
-            display: flex; flex-direction: column; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        #sidebar.collapsed { width: 0; transform: translateX(-100%); }
-        
-        .sidebar-header { padding: 20px 15px 10px; display: flex; justify-content: space-between; align-items: center; }
-        .sidebar-label { font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; }
-
-        #file-list { flex: 1; overflow-y: auto; padding: 0 10px; }
-        .file-item { 
-            padding: 8px 12px; border-radius: 6px; font-size: 13px; cursor: pointer;
-            display: flex; align-items: center; gap: 10px; margin-bottom: 2px;
-            border: 1px solid transparent; color: var(--text-dim); transition: 0.2s;
-        }
-        .file-item:hover { background: #21262d; color: #fff; }
-        .file-item.active { background: #1f242c; color: var(--accent-bright); border-color: var(--border); font-weight: 600; }
-
-        /* EDITOR AREA */
-        .editor-workspace { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-        
-        .tabs-container { 
-            background: #010409; height: var(--tab-h); display: flex; 
-            border-bottom: 1px solid var(--border); overflow-x: auto;
-        }
-        .tab {
-            min-width: 120px; padding: 0 15px; font-size: 12px; display: flex; align-items: center; 
-            justify-content: space-between; border-right: 1px solid var(--border); cursor: pointer;
-            background: #0d1117; color: var(--text-dim);
-        }
-        .tab.active { background: var(--panel); color: #fff; border-bottom: 2px solid var(--accent-bright); }
-        .tab i.close-btn { font-size: 10px; padding: 4px; border-radius: 4px; }
-        .tab i.close-btn:hover { background: #30363d; color: #ff7b72; }
-
-        #monaco-root { flex: 1; }
-
-        /* CONSOLE */
-        #console { 
-            height: 220px; background: #000; border-top: 2px solid var(--border);
-            display: flex; flex-direction: column;
-        }
-        .console-toolbar { 
-            background: var(--panel); padding: 5px 15px; border-bottom: 1px solid var(--border);
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .console-title { font-size: 10px; font-weight: 800; color: var(--accent-bright); letter-spacing: 1px; }
-        #output { 
-            flex: 1; padding: 15px; font-family: 'Fira Code', monospace; font-size: 13px;
-            overflow-y: auto; color: #d1d5db; white-space: pre-wrap; line-height: 1.6;
-        }
-
-        /* ACTIONS */
-        .btn {
-            background: #21262d; color: #c9d1d9; border: 1px solid var(--border);
-            padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 12px;
-            display: flex; align-items: center; gap: 8px; font-weight: 600;
-        }
-        .btn:hover { background: #30363d; border-color: #8b949e; }
-        .btn-primary { background: var(--accent); color: #fff; border: none; padding: 8px 20px; }
-        .btn-primary:hover { background: var(--accent-bright); transform: translateY(-1px); }
-        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
-        /* MODALS */
-        .overlay { 
-            position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999;
-            display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);
-        }
-        .card { 
-            background: var(--panel); border: 1px solid var(--border); padding: 30px; 
-            border-radius: 12px; width: 450px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-        }
-
-        /* HELPERS */
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #8b949e; }
-        .status-online { background: var(--accent-bright); box-shadow: 0 0 10px var(--accent); }
+        :root { --sidebar-w: 240px; --terminal-h: 30%; }
+        body { background: #0d0d0d; color: #e0e0e0; overflow: hidden; font-family: 'Inter', system-ui; }
+        #app { display: grid; grid-template-columns: var(--sidebar-w) 1fr; height: 100vh; }
+        .editor-container { display: grid; grid-template-rows: 1fr var(--terminal-h); overflow: hidden; }
+        #terminal { background: #050505; border-top: 1px solid #333; font-family: 'Fira Code', monospace; padding: 10px; overflow-y: auto; white-space: pre-wrap; font-size: 13px; }
+        .tab { padding: 8px 16px; cursor: pointer; border-right: 1px solid #222; background: #1a1a1a; display: flex; align-items: center; gap: 8px; font-size: 12px; transition: 0.2s; }
+        .tab.active { background: #2d2d2d; border-bottom: 2px solid #3b82f6; color: #fff; }
+        .tab:hover { background: #252525; }
+        .ansi-red { color: #ff5555; } .ansi-green { color: #50fa7b; } .ansi-yellow { color: #f1fa8c; }
+        .ansi-blue { color: #8be9fd; } .ansi-white { color: #f8f8f2; }
+        #resizer { cursor: row-resize; height: 4px; background: #333; }
+        #resizer:hover { background: #3b82f6; }
+        .loading { animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
-<div id="welcome-modal" class="overlay">
-    <div class="card">
-        <h2 style="margin-bottom:15px; color:#fff">Dunstons-Coder <span style="color:var(--accent-bright)">Titanium</span></h2>
-        <p style="color:var(--text-dim); margin-bottom:25px; font-size:14px; line-height:1.6">
-            The world-class IDE for students. <br>
-            Supports <b>Java (Streams/OOP)</b>, <b>Python 3</b>, <b>C++</b>, <b>Lua</b>, and <b>Web Preview</b>.
-        </p>
-        <div style="text-align:left; background:#0d1117; padding:15px; border-radius:8px; margin-bottom:25px; font-size:12px;">
-            <code style="color:var(--accent-bright)">[Ctrl + Enter]</code> Run Code <br>
-            <code style="color:var(--accent-bright)">[Ctrl + S]</code> Save Snapshot <br>
-            <code style="color:var(--accent-bright)">[Main.java]</code> Entry point for Java
+<div id="app">
+    <aside class="border-right border-[#333] bg-[#111] p-4 flex flex-col gap-4">
+        <h1 class="text-blue-500 font-bold text-lg tracking-tighter italic">HYPERION v14.0</h1>
+        <div class="flex flex-col gap-2">
+            <button onclick="createNewFile()" class="w-full bg-[#222] hover:bg-[#333] py-2 rounded text-xs">+ New File</button>
+            <div id="file-list" class="flex flex-col gap-1 overflow-y-auto max-h-[40vh]"></div>
         </div>
-        <button class="btn btn-primary" style="width:100%; justify-content:center" onclick="closeModal()">START CODING</button>
-    </div>
-</div>
+        <hr class="border-[#222]">
+        <div class="flex flex-col gap-3">
+            <label class="text-[10px] text-gray-500 uppercase font-bold">Language</label>
+            <select id="lang-select" onchange="updateLang()" class="bg-[#222] text-xs p-2 rounded outline-none border border-[#444]"></select>
+            <label class="text-[10px] text-gray-500 uppercase font-bold">Project Controls</label>
+            <button onclick="exportProject()" class="text-xs text-left px-2 py-1 hover:bg-[#222] rounded">💾 Export .json</button>
+            <button onclick="takeSnapshot()" class="text-xs text-left px-2 py-1 hover:bg-[#222] rounded">📸 Save Snapshot</button>
+            <button onclick="testAllLanguages()" class="text-xs text-left px-2 py-1 hover:bg-[#222] rounded text-yellow-500">🧪 Health Check</button>
+        </div>
+    </aside>
 
-<div class="app-shell">
-    <header>
-        <div class="logo-area">
-            <button class="btn" style="padding:6px 10px" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
-            <div class="logo-text">DUNSTONS-CODER</div>
-            <div class="logo-tag">V13.0 ELITE</div>
-        </div>
-        <div class="toolbar">
-            <button class="btn" onclick="shareProj()" title="Generate Share Link"><i class="fa-solid fa-share-nodes"></i> SHARE</button>
-            <button class="btn" onclick="exportCode()" title="Download Source"><i class="fa-solid fa-download"></i></button>
-            <button id="run-btn" class="btn btn-primary" onclick="runCode()">RUN <i class="fa-solid fa-play"></i></button>
-        </div>
-    </header>
-
-    <div class="main-container">
-        <aside id="sidebar">
-            <div class="sidebar-header">
-                <span class="sidebar-label">Explorer</span>
-                <button class="btn" style="padding:4px 8px" onclick="addNewFile()"><i class="fa-solid fa-plus"></i></button>
-            </div>
-            <div id="file-list"></div>
-            
-            <div style="padding:20px; border-top:1px solid var(--border)">
-                <div class="sidebar-label" style="margin-bottom:10px">Engine Status</div>
-                <div style="display:flex; align-items:center; gap:10px; font-size:12px">
-                    <div class="status-dot status-online"></div>
-                    <span>Piston API Ready</span>
+    <main class="editor-container">
+        <div class="flex flex-col overflow-hidden">
+            <div class="bg-[#1a1a1a] flex justify-between items-center border-b border-[#333]">
+                <div id="tabs-container" class="flex overflow-x-auto"></div>
+                <div class="px-4 flex gap-4 items-center">
+                    <input type="text" id="stdin-input" placeholder="Program stdin..." class="bg-[#000] text-xs p-1 rounded border border-[#333] w-32 outline-none focus:border-blue-500">
+                    <button onclick="runCode()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1 rounded text-sm font-bold transition flex items-center gap-2">
+                        ▶ RUN <span class="text-[10px] opacity-50 font-normal">Ctrl+Enter</span>
+                    </button>
                 </div>
             </div>
-        </aside>
-
-        <main class="editor-workspace">
-            <div class="tabs-container" id="tabs-bar"></div>
-            <div id="monaco-root"></div>
-            
-            <div id="console">
-                <div class="console-toolbar">
-                    <div class="console-title">TERMINAL</div>
-                    <div style="display:flex; gap:15px; font-size:11px; color:var(--text-dim)">
-                        <span id="runtime-display"></span>
-                        <span style="cursor:pointer" onclick="clearConsole()">CLEAR</span>
-                    </div>
-                </div>
-                <div id="output">System ready...</div>
+            <div id="editor" class="h-full"></div>
+        </div>
+        
+        <div class="flex flex-col">
+            <div id="resizer"></div>
+            <div class="bg-[#0a0a0a] px-4 py-1 flex justify-between items-center border-t border-[#333]">
+                <span class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Console Output</span>
+                <button onclick="clearConsole()" class="text-[10px] text-gray-400 hover:text-white">Clear</button>
             </div>
-        </main>
-    </div>
+            <div id="terminal"></div>
+        </div>
+    </main>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
 <script>
-    let editor, files = {}, activeFile = '';
-    const PISTON_URL = "https://emkc.org/api/v2/piston/execute";
-
-    const DEFAULT_FS = {
-        'Main.java': { lang: 'java', content: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Dunstons-Coder Java Engine v13");\n        System.out.println("Running Java 17+ Stream Test:");\n        java.util.stream.IntStream.range(1, 6).forEach(System.out::println);\n    }\n}' },
-        'app.py': { lang: 'python', content: 'print("Python 3 Engine Active")\nname = "Dunston"\nprint(f"Hello, {name}!")' },
-        'index.html': { lang: 'html', content: '\n<h1>Welcome to Dunston IDE</h1>\n<p style="color: green;">Web engine ready.</p>' }
+    let editor, activeFileId;
+    let files = JSON.parse(localStorage.getItem('hyperion_project')) || [
+        { id: '1', name: 'main.py', content: 'print("Hello from Hyperion v14!")', lang: 'python' }
+    ];
+    
+    const RUNTIMES = {
+        "python": { v: "3.10.0", name: "Python", template: "def main():\n    print('Hello World')\n\nif __name__ == '__main__':\n    main()" },
+        "javascript": { v: "18.15.0", name: "Node.js", template: "console.log('Node JS execution');" },
+        "java": { v: "17.0.2", name: "Java", template: "public class Main {\n    public static void main(String[] args) {\n        System.out.println(\"Java 17 Execution\");\n    }\n}" },
+        "cpp": { v: "10.2.0", name: "C++", template: "#include <iostream>\nint main() {\n    std::cout << \"C++ 10.2 Ready\" << std::endl;\n    return 0;\n}" }
     };
 
-    // Load Files
-    files = JSON.parse(localStorage.getItem('dc_fs_v13')) || DEFAULT_FS;
-
-    require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs' }});
-    require(['vs/editor/editor.main'], function() {
-        editor = monaco.editor.create(document.getElementById('monaco-root'), {
+    require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } });
+    require(['vs/editor/editor.main'], function () {
+        editor = monaco.editor.create(document.getElementById('editor'), {
             theme: 'vs-dark',
-            automaticLayout: true,
             fontSize: 14,
-            fontFamily: 'Fira Code',
-            padding: { top: 10 },
+            automaticLayout: true,
             minimap: { enabled: false },
-            scrollbar: { vertical: 'hidden' },
-            roundedSelection: true
+            padding: { top: 10 }
         });
 
-        // Event: Content Change
         editor.onDidChangeModelContent(() => {
-            if (activeFile) {
-                files[activeFile].content = editor.getValue();
-                saveLocal();
-            }
+            const file = files.find(f => f.id === activeFileId);
+            if (file) file.content = editor.getValue();
+            saveProject();
         });
 
-        // Global Keybinds
-        window.addEventListener('keydown', e => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') runCode();
-            if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveLocal(); log("System: Snapshot Saved."); }
-        });
-
-        // Init IDE
-        initIDE();
+        initUI();
     });
 
-    function initIDE() {
-        const first = Object.keys(files)[0];
-        loadURLProject();
-        switchFile(activeFile || first);
-        renderFiles();
-        renderTabs();
+    function initUI() {
+        const select = document.getElementById('lang-select');
+        Object.keys(RUNTIMES).forEach(key => {
+            const opt = document.createElement('option');
+            opt.value = key; opt.textContent = `${RUNTIMES[key].name} (${RUNTIMES[key].v})`;
+            select.appendChild(opt);
+        });
+        renderFileList();
+        switchFile(files[0].id);
     }
 
-    // --- CORE LOGIC ---
-
-    async function runCode() {
-        const out = document.getElementById('output');
-        const btn = document.getElementById('run-btn');
-        const file = files[activeFile];
-        
-        if (file.lang === 'html') {
-            const win = window.open();
-            win.document.write(file.content);
-            log("Web: Preview opened in new tab.");
-            return;
-        }
-
-        btn.disabled = true;
-        out.innerHTML = `<span style="color:var(--text-dim)"># Requesting execution for ${activeFile}...</span>\n`;
-        const start = performance.now();
-
-        try {
-            const res = await fetch(PISTON_URL, {
-                method: 'POST',
-                body: JSON.stringify({
-                    language: file.lang,
-                    version: "*",
-                    files: Object.keys(files).map(k => ({ name: k, content: files[k].content }))
-                })
-            });
-            const data = await res.json();
-            const time = ((performance.now() - start) / 1000).toFixed(2);
-            
-            document.getElementById('runtime-display').innerText = `Completed in ${time}s`;
-            
-            if (data.run) {
-                const combined = (data.compile?.stderr || "") + (data.run.stderr || "") + (data.run.stdout || "");
-                out.innerText = combined || "Program executed successfully (no output).";
-                out.style.color = (data.run.stderr || data.compile?.stderr) ? "#ff7b72" : "#d1d5db";
-            }
-        } catch (e) {
-            out.innerText = "Error: Code execution engine unreachable.";
-        } finally {
-            btn.disabled = false;
-        }
-    }
-
-    function switchFile(name) {
-        if (!files[name]) return;
-        activeFile = name;
-        editor.setValue(files[name].content);
-        
-        // Language Mapping
-        const map = { 'py':'python', 'java':'java', 'html':'html', 'js':'javascript', 'cpp':'cpp' };
-        const ext = name.split('.').pop();
-        monaco.editor.setModelLanguage(editor.getModel(), map[ext] || 'plaintext');
-        
-        renderFiles();
-        renderTabs();
-    }
-
-    function addNewFile() {
-        const name = prompt("Enter filename (e.g. script.py, Utils.java):");
-        if (!name) return;
-        const ext = name.split('.').pop();
-        const langMap = { 'py':'python', 'java':'java', 'html':'html', 'cpp':'cpp' };
-        files[name] = { lang: langMap[ext] || 'python', content: '' };
-        switchFile(name);
-    }
-
-    function deleteFile(e, name) {
-        e.stopPropagation();
-        if (Object.keys(files).length <= 1) return alert("IDE requires at least one file.");
-        delete files[name];
-        switchFile(Object.keys(files)[0]);
-    }
-
-    // --- UI HELPERS ---
-
-    function renderFiles() {
+    function renderFileList() {
         const list = document.getElementById('file-list');
         list.innerHTML = '';
-        Object.keys(files).forEach(name => {
+        files.forEach(f => {
             const div = document.createElement('div');
-            div.className = `file-item ${name === activeFile ? 'active' : ''}`;
-            const icon = name.endsWith('.py') ? 'fa-brands fa-python' : 
-                         name.endsWith('.java') ? 'fa-brands fa-java' : 'fa-solid fa-file-code';
-            div.innerHTML = `<i class="${icon}"></i> <span>${name}</span>`;
-            div.onclick = () => switchFile(name);
+            div.className = `p-2 text-xs cursor-pointer rounded flex justify-between group ${activeFileId === f.id ? 'bg-[#2d2d2d]' : 'hover:bg-[#1a1a1a]'}`;
+            div.innerHTML = `<span>📄 ${f.name}</span> <span onclick="deleteFile('${f.id}')" class="hidden group-hover:block text-red-500">×</span>`;
+            div.onclick = (e) => { if(e.target.tagName !== 'SPAN' || !e.target.classList.contains('text-red-500')) switchFile(f.id); };
             list.appendChild(div);
         });
+        renderTabs();
     }
 
     function renderTabs() {
-        const bar = document.getElementById('tabs-bar');
-        bar.innerHTML = '';
-        Object.keys(files).forEach(name => {
-            const div = document.createElement('div');
-            div.className = `tab ${name === activeFile ? 'active' : ''}`;
-            div.innerHTML = `<span>${name}</span> <i class="fa-solid fa-xmark close-btn" onclick="deleteFile(event, '${name}')"></i>`;
-            div.onclick = (e) => { if(!e.target.classList.contains('close-btn')) switchFile(name); };
-            bar.appendChild(div);
+        const container = document.getElementById('tabs-container');
+        container.innerHTML = '';
+        files.forEach(f => {
+            const tab = document.createElement('div');
+            tab.className = `tab ${activeFileId === f.id ? 'active' : ''}`;
+            tab.innerHTML = `<span>${f.name}</span>`;
+            tab.onclick = () => switchFile(f.id);
+            container.appendChild(tab);
         });
     }
 
-    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
-    function closeModal() { document.getElementById('welcome-modal').style.display = 'none'; }
-    function clearConsole() { document.getElementById('output').innerText = ''; }
-    function log(msg) { document.getElementById('output').innerText += `\n${msg}`; }
-    function saveLocal() { localStorage.setItem('dc_fs_v13', JSON.stringify(files)); }
-
-    function exportCode() {
-        const blob = new Blob([JSON.stringify(files, null, 2)], {type: 'application/json'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `dunstons-project.json`;
-        a.click();
+    function switchFile(id) {
+        activeFileId = id;
+        const file = files.find(f => f.id === id);
+        editor.setValue(file.content);
+        monaco.editor.setModelLanguage(editor.getModel(), file.lang === 'cpp' ? 'cpp' : file.lang);
+        document.getElementById('lang-select').value = file.lang;
+        renderFileList();
     }
 
-    function shareProj() {
-        const str = btoa(unescape(encodeURIComponent(JSON.stringify(files))));
-        const url = window.location.origin + window.location.pathname + '?p=' + str;
-        navigator.clipboard.writeText(url).then(() => alert("Cloud-share link copied to clipboard!"));
+    function createNewFile() {
+        const name = prompt("File name (include extension):", "script.py");
+        if (!name) return;
+        const lang = name.split('.').pop();
+        const newFile = { id: Date.now().toString(), name, content: '', lang: lang === 'js' ? 'javascript' : lang };
+        files.push(newFile);
+        switchFile(newFile.id);
     }
 
-    function loadURLProject() {
-        const params = new URLSearchParams(window.location.search);
-        const p = params.get('p');
-        if (p) {
-            try {
-                files = JSON.parse(decodeURIComponent(escape(atob(p))));
-                activeFile = Object.keys(files)[0];
-            } catch(e) { console.error("Malformed share link"); }
+    function saveProject() {
+        localStorage.setItem('hyperion_project', JSON.stringify(files));
+    }
+
+    function ansiToHtml(text) {
+        if (!text) return '';
+        const safe = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        return safe.replace(/\x1b\[(\d+)(;\d+)*m/g, (match, code) => {
+            const colors = { 31: 'ansi-red', 32: 'ansi-green', 33: 'ansi-yellow', 34: 'ansi-blue', 0: '' };
+            return `<span class="${colors[code] || 'ansi-white'}">`;
+        }) + "</span>";
+    }
+
+    async function runCode() {
+        const term = document.getElementById('terminal');
+        const activeFile = files.find(f => f.id === activeFileId);
+        term.innerHTML = `<div class="loading text-blue-400">⚡ Compiling & Executing ${activeFile.name}...</div>`;
+        
+        const payload = {
+            language: activeFile.lang,
+            version: RUNTIMES[activeFile.lang]?.v || "*",
+            files: files.map(f => ({ name: f.name, content: f.content })),
+            stdin: document.getElementById('stdin-input').value
+        };
+
+        try {
+            const res = await fetch('https://emkc.org/api/v2/piston/execute', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            
+            term.innerHTML = '';
+            if (data.compile && data.compile.stderr) {
+                term.innerHTML += `<div class="ansi-red">COMPILE ERROR:\n${ansiToHtml(data.compile.stderr)}</div>`;
+            }
+            
+            const output = data.run.stdout + data.run.stderr;
+            const truncated = output.length > 5000 ? output.substring(0, 5000) + "\n\n[Output Truncated...]" : output;
+            term.innerHTML += `<div>${ansiToHtml(truncated)}</div>`;
+            
+            if (data.run.signal) term.innerHTML += `<div class="text-orange-500 mt-2">Process killed by signal: ${data.run.signal}</div>`;
+        } catch (err) {
+            term.innerHTML = `<div class="ansi-red">Network Error: Could not reach Piston API.</div>`;
         }
+    }
+
+    // Hotkeys
+    window.addEventListener('keydown', e => {
+        if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); runCode(); }
+        if (e.ctrlKey && e.key === 's') { e.preventDefault(); takeSnapshot(); alert('Snapshot Saved!'); }
+    });
+
+    // Simple Resizer
+    let isResizing = false;
+    document.getElementById('resizer').onmousedown = () => isResizing = true;
+    window.onmousemove = (e) => {
+        if (!isResizing) return;
+        const h = window.innerHeight - e.clientY;
+        if (h > 100 && h < window.innerHeight * 0.8) {
+            document.querySelector('.editor-container').style.gridTemplateRows = `1fr ${h}px`;
+        }
+    };
+    window.onmouseup = () => isResizing = false;
+
+    function clearConsole() { document.getElementById('terminal').innerHTML = ''; }
+
+    function takeSnapshot() {
+        let history = JSON.parse(localStorage.getItem('hyperion_history')) || [];
+        history.unshift({ time: new Date().toISOString(), data: files });
+        if (history.length > 10) history.pop();
+        localStorage.setItem('hyperion_history', JSON.stringify(history));
+    }
+
+    function exportProject() {
+        const blob = new Blob([JSON.stringify(files, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'hyperion_project.json'; a.click();
     }
 </script>
 </body>

@@ -1,59 +1,104 @@
-// ==UserScript==
-// @name         Omega Chess Analyst
-// @namespace    http://tampermonkey.net/
-// @version      2.0
-// @description  Local Stockfish analysis integration
-// @author       Dunstons-Coder
-// @match        https://www.chess.com/play/*
-// @match        https://www.chess.com/game/*
-// @grant        none
-// ==/UserScript==
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dunstons-Coder | Omega v25 Ultra</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&family=Fira+Code:wght@400;500&display=swap');
+:root { --bg: #050505; --panel: #0d0d0f; --accent: #10b981; --border: #1f1f23; --text: #f4f4f5; }
+body { background: var(--bg); color: var(--text); font-family: 'Plus Jakarta Sans', sans-serif; height: 100vh; overflow: hidden; margin: 0; }
+.monaco-editor { padding-top: 10px; background: transparent !important; }
+.tab-active { color: var(--accent); border-bottom: 2px solid var(--accent); background: rgba(16, 185, 129, 0.05); }
+pre { white-space: pre-wrap; word-wrap: break-word; font-family: 'Fira Code', monospace; }
+.err-text { color: #ef4444; font-weight: bold; }
+</style>
+</head>
+<body class="flex flex-col">
 
-(function() {
-    'use strict';
+<header class="h-16 border-b border-[#1f1f23] flex items-center justify-between px-6 bg-black/50 z-50">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-gradient-to-br from-emerald-400 to-green-700 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+<i class="fa-solid fa-atom text-black text-xl"></i>
+</div>
+<div>
+<h1 class="font-extrabold text-sm tracking-widest uppercase italic leading-none">Dunstons-<span class="text-emerald-500">Coder</span></h1>
+<span class="text-[9px] text-gray-500 font-bold tracking-[0.3em]">OMEGA V25 ULTRA</span>
+</div>
+</div>
+<div class="flex items-center gap-1 bg-[#121214] rounded-full p-1 border border-[#1f1f23]">
+<button onclick="openModal('founder')" class="px-4 py-1.5 text-[10px] font-black uppercase text-emerald-500 bg-emerald-500/10 rounded-full">Founder</button>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex flex-col items-end">
+<div class="text-[9px] font-bold text-gray-500 uppercase">Rank: Level <span id="user-level" class="text-emerald-500">1</span></div>
+<div class="w-32 h-1 bg-[#1f1f23] rounded-full mt-1 overflow-hidden">
+<div id="xp-bar" class="h-full bg-emerald-500 w-0 transition-all duration-500"></div>
+</div>
+</div>
+<button onclick="exportProject()" class="w-10 h-10 flex items-center justify-center rounded-full bg-[#121214] border border-[#1f1f23] hover:border-emerald-500 text-gray-400 hover:text-white transition">
+<i class="fa-solid fa-download"></i>
+</button>
+</div>
+</header>
 
-    // 1. Load Stockfish from a CDN
-    const sfWorker = new Worker('https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js');
-    
-    sfWorker.onmessage = function(e) {
-        if (e.data.includes('bestmove')) {
-            const move = e.data.split(' ')[1];
-            console.log('%c Omega Analysis: ' + move, 'color: #10b981; font-weight: bold;');
-            drawHighlight(move.substring(0, 2), move.substring(2, 4));
-        }
-    };
+<div class="flex flex-1 overflow-hidden">
+<aside class="w-64 bg-black border-r border-[#1f1f23] flex flex-col p-4 gap-6">
+<button onclick="createNewFile()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-black py-3 rounded-xl font-extrabold text-xs uppercase transition-all shadow-lg shadow-emerald-500/20">+ New Source File</button>
+<div class="flex-1 flex flex-col gap-2">
+<h3 class="text-[10px] font-black text-gray-600 uppercase tracking-widest px-2">Project Explorer</h3>
+<div id="file-tree" class="space-y-1 overflow-y-auto max-h-[50vh]"></div>
+</div>
+<div class="bg-[#0d0d0f] rounded-2xl border border-[#1f1f23] p-4">
+<label class="text-[9px] font-bold text-gray-500 uppercase block mb-2">Runtime</label>
+<select id="lang-select" onchange="updateLangManual()" class="w-full bg-black text-xs text-white p-3 rounded-lg border border-[#1f1f23] outline-none focus:border-emerald-500 transition">
+<option value="python">Python 3</option>
+<option value="cpp">C++</option>
+<option value="java">Java</option>
+<option value="javascript">Node.js</option>
+<option value="html">Web Live</option>
+</select>
+<button id="run-btn" onclick="runCode()" class="w-full mt-4 bg-white text-black py-3 rounded-lg font-black text-xs uppercase hover:bg-emerald-500 transition-all flex items-center justify-center gap-2"><i class="fa-solid fa-play"></i> Execute</button>
+</div>
+</aside>
 
-    // 2. Initialize Engine
-    sfWorker.postMessage('uci');
-    sfWorker.postMessage('setoption name Skill Level value 20');
+<main class="flex-1 flex flex-col bg-[#050505]">
+<div id="tabs-bar" class="flex bg-black border-b border-[#1f1f23] h-12 items-center px-4 gap-2 overflow-x-auto"></div>
+<div id="editor-container" class="flex-1 relative"></div>
+<div class="h-8 bg-[#0d0d0f] border-t border-[#1f1f23] flex items-center justify-between px-4 text-[10px] font-bold text-gray-500">
+<div class="flex gap-4"><span><i class="fa-solid fa-check-circle text-emerald-500"></i> Local-Sync: OK</span><span id="char-count">0 chars</span></div>
+<span>OMEGA ENGINE v25.0</span>
+</div>
+</main>
 
-    // 3. Highlight Function
-    function drawHighlight(from, to) {
-        // Remove old highlights
-        document.querySelectorAll('.omega-move').forEach(el => el.remove());
-        
-        const board = document.querySelector('chess-board');
-        if (!board) return;
+<div id="resizer" class="w-1 bg-[#1f1f23] hover:bg-emerald-500 cursor-col-resize transition-colors"></div>
+<div id="output-panel" class="w-1/3 flex flex-col bg-black border-l border-[#1f1f23]">
+<div class="h-12 border-b border-[#1f1f23] flex items-center justify-between px-6">
+<div class="flex gap-6 h-full">
+<button onclick="switchOut('term')" id="tab-term" class="text-[10px] font-black text-emerald-500 border-b-2 border-emerald-500 h-full uppercase">Console</button>
+<button onclick="switchOut('web')" id="tab-web" class="text-[10px] font-black text-gray-500 h-full uppercase">Live View</button>
+</div>
+<button onclick="clearConsole()" class="text-[10px] font-bold text-gray-600 hover:text-white uppercase">Clear</button>
+</div>
+<div id="console-view" class="flex-1 p-6 overflow-y-auto font-mono text-sm bg-black"><div id="terminal-output" class="text-gray-400"></div></div>
+<div id="preview-view" class="flex-1 hidden bg-white"><iframe id="web-frame" class="w-full h-full" sandbox="allow-scripts allow-same-origin"></iframe></div>
+</div>
 
-        [from, to].forEach(coord => {
-            const files = {a:1, b:2, c:3, d:4, e:5, f:6, g:7, h:8};
-            const sqClass = `square-${files[coord[0]]}${coord[1]}`;
-            
-            const hl = document.createElement('div');
-            hl.className = `highlight omega-move ${sqClass}`;
-            hl.style.cssText = `background: #10b981; opacity: 0.6; z-index: 0;`;
-            board.appendChild(hl);
-        });
-    }
+<div id="modal-overlay" class="fixed inset-0 bg-black/95 backdrop-blur-xl z-[100] hidden flex items-center justify-center p-6" onclick="closeModals()">
+<div id="modal-founder" class="bg-[#0d0d0f] w-full max-w-xl rounded-[2rem] border border-[#1f1f23] p-12 text-center relative hidden" onclick="event.stopPropagation()">
+<div class="w-28 h-28 bg-gradient-to-br from-emerald-400 to-green-600 rounded-3xl mx-auto flex items-center justify-center mb-8 rotate-12 shadow-2xl shadow-emerald-500/20"><i class="fa-solid fa-crown text-black text-5xl"></i></div>
+<h2 class="text-4xl font-black text-white mb-2 uppercase italic tracking-tighter">DUNSTON JUDE BANDASA</h2>
+<p class="text-emerald-500 font-extrabold mb-8 tracking-[0.2em] text-xs uppercase">Founder | Visionary</p>
+<p class="text-gray-400 leading-relaxed mb-10 italic">"Empowering the next generation of developers with tools that work for them."</p>
+<button onclick="closeModals()" class="bg-white text-black text-[10px] font-black px-10 py-4 rounded-xl uppercase hover:bg-emerald-500 transition">Return to IDE</button>
+</div>
+</div>
 
-    // 4. Observer to detect board changes
-    const observer = new MutationObserver(() => {
-        // Logic to extract FEN from Chess.com's internal game state
-        // and send to worker: sfWorker.postMessage('position fen ' + currentFen);
-        // sfWorker.postMessage('go depth 15');
-    });
-
-    const boardNode = document.querySelector('chess-board');
-    if (boardNode) observer.observe(boardNode, { attributes: true, subtree: true });
-
-})();
+<script src="script.js"></script>
+</body>
+</html>

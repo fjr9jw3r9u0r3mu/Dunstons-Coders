@@ -3,248 +3,374 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dunstons-Coder | World-Class Student IDE</title>
+    <title>Dunstons-Coder | Elite Development Platform</title>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs/editor/editor.main.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+
     <style>
         :root {
             --bg: #05070a; --panel: #0d1117; --accent: #00ff41; 
-            --border: #2b3238; --text: #e6edf3; --tab-active: #1e1e1e;
+            --border: #2b3238; --text: #e6edf3; --tab-inactive: #161b22;
+            --error: #ff4444; --header-h: 55px; --sidebar-w: 240px;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body, html { height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; overflow: hidden; }
 
-        /* UI GRID */
-        .app-container { display: grid; grid-template-rows: 50px 1fr 220px; height: 100vh; }
-
-        /* HEADER & TOOLBAR */
-        header { background: var(--panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; }
-        .logo { font-weight: 900; color: var(--accent); font-size: 18px; letter-spacing: 1px; }
+        /* UI LAYOUT */
+        .app-shell { display: grid; grid-template-rows: var(--header-h) 1fr; height: 100vh; }
+        
+        /* HEADER */
+        header { 
+            background: var(--panel); border-bottom: 1px solid var(--border); 
+            display: flex; align-items: center; justify-content: space-between; padding: 0 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 100;
+        }
+        .logo { font-weight: 800; color: var(--accent); letter-spacing: -0.5px; display: flex; align-items: center; gap: 10px; }
         .toolbar { display: flex; gap: 8px; }
 
-        /* TABS SYSTEM */
-        .tabs-bar { background: #090c10; display: flex; overflow-x: auto; border-bottom: 1px solid var(--border); }
-        .tab { 
-            padding: 8px 20px; font-size: 12px; cursor: pointer; border-right: 1px solid var(--border); 
-            display: flex; align-items: center; gap: 10px; background: #161b22; transition: 0.2s;
+        /* WORKSPACE */
+        .main-view { display: flex; height: 100%; overflow: hidden; }
+        
+        /* SIDEBAR */
+        #sidebar { 
+            width: var(--sidebar-w); background: var(--panel); border-right: 1px solid var(--border);
+            display: flex; flex-direction: column; transition: width 0.3s;
         }
-        .tab.active { background: var(--tab-active); border-bottom: 2px solid var(--accent); }
-        .tab:hover { background: #1f242c; }
+        .sidebar-section { padding: 15px; border-bottom: 1px solid var(--border); }
+        .section-title { font-size: 10px; font-weight: 800; color: #8b949e; text-transform: uppercase; margin-bottom: 10px; }
+        
+        /* FILE LIST */
+        #file-list { flex: 1; overflow-y: auto; padding: 5px; }
+        .file-item { 
+            padding: 8px 12px; border-radius: 6px; font-size: 13px; cursor: pointer;
+            display: flex; align-items: center; gap: 8px; margin-bottom: 2px; transition: 0.2s;
+        }
+        .file-item:hover { background: #1f242c; }
+        .file-item.active { background: rgba(0, 255, 65, 0.1); color: var(--accent); font-weight: 600; }
 
-        /* MAIN AREA */
-        .main-workspace { display: flex; height: 100%; overflow: hidden; }
-        #sidebar { width: 200px; background: var(--panel); border-right: 1px solid var(--border); padding: 15px; }
-        #editor-target { flex: 1; height: 100%; }
+        /* EDITOR AREA */
+        .editor-stack { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; }
+        .tabs-bar { 
+            background: #090c10; display: flex; overflow-x: auto; 
+            border-bottom: 1px solid var(--border); height: 35px;
+        }
+        .tab {
+            padding: 0 15px; font-size: 12px; display: flex; align-items: center; gap: 8px;
+            background: var(--tab-inactive); border-right: 1px solid var(--border); cursor: pointer;
+        }
+        .tab.active { background: #1e1e1e; border-top: 2px solid var(--accent); }
 
-        /* OUTPUT AREA */
-        #console-container { background: #000; display: flex; flex-direction: column; border-top: 1px solid var(--border); }
+        #monaco-root { flex: 1; background: #1e1e1e; }
+
+        /* CONSOLE (RESIZABLE) */
+        #console-root { 
+            height: 200px; background: #000; border-top: 2px solid var(--border); 
+            display: flex; flex-direction: column; position: relative;
+        }
+        .resizer-h { height: 4px; cursor: ns-resize; background: transparent; position: absolute; top: -2px; width: 100%; z-index: 10; }
+        .resizer-h:hover { background: var(--accent); }
+        
         .console-header { 
-            background: #0d1117; padding: 5px 15px; font-size: 11px; font-weight: bold; 
-            display: flex; justify-content: space-between; color: var(--accent);
+            background: #0d1117; padding: 6px 15px; font-size: 11px; font-weight: bold;
+            display: flex; justify-content: space-between; align-items: center; color: var(--accent);
         }
-        #output-terminal { flex: 1; padding: 15px; font-family: 'Consolas', monospace; font-size: 13px; overflow-y: auto; color: #fff; white-space: pre-wrap; }
-
-        /* BUTTONS */
-        .btn { 
-            background: #21262d; color: var(--text); border: 1px solid var(--border); padding: 6px 12px; 
-            border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s;
-            display: flex; align-items: center; gap: 5px;
-        }
-        .btn:hover { border-color: var(--accent); background: #30363d; }
-        .btn-run { background: var(--accent); color: #000; border: none; padding: 6px 20px; }
-        .btn-run:hover { background: #00cc33; transform: translateY(-1px); }
-
-        /* TOOLTIPS & ONBOARDING */
-        [title]:hover::after {
-            content: attr(title); position: absolute; top: 45px; background: #30363d; padding: 5px 10px;
-            border-radius: 4px; font-size: 10px; z-index: 99; white-space: nowrap;
+        #output { 
+            flex: 1; padding: 15px; font-family: 'Fira Code', monospace; font-size: 13px; 
+            overflow-y: auto; color: #d1d1d1; white-space: pre-wrap; line-height: 1.5;
         }
 
-        /* JAVA LOGIC WARNING */
-        .java-hint { font-size: 10px; color: #8b949e; margin-top: 10px; line-height: 1.3; }
+        /* BUTTONS & UI */
+        .btn {
+            background: #21262d; color: var(--text); border: 1px solid var(--border);
+            padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;
+            display: flex; align-items: center; gap: 6px; transition: 0.2s;
+        }
+        .btn:hover { border-color: #8b949e; background: #30363d; }
+        .btn-run { background: var(--accent); color: #000; border: none; padding: 6px 20px; font-weight: 800; }
+        .btn-run:hover { transform: scale(1.05); filter: brightness(1.1); }
+
+        /* ONBOARDING MODAL */
+        .modal { 
+            display: flex; position: fixed; inset: 0; background: rgba(0,0,0,0.85); 
+            z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(5px);
+        }
+        .modal-card { 
+            background: var(--panel); border: 1px solid var(--border); padding: 30px; 
+            border-radius: 12px; max-width: 500px; width: 90%; text-align: center;
+        }
+
+        .kbd { background: #30363d; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-family: monospace; }
+        
+        /* THEME TOGGLE */
+        .light-theme { --bg: #ffffff; --panel: #f6f8fa; --border: #d0d7de; --text: #24292f; }
     </style>
 </head>
 <body>
 
-<div class="app-container">
+<div id="onboarding" class="modal">
+    <div class="modal-card">
+        <h2 style="color:var(--accent); font-size: 24px; margin-bottom: 10px;">Dunstons-Coder v12</h2>
+        <p style="margin-bottom: 20px; opacity: 0.8; line-height: 1.6;">
+            Welcome to the elite student IDE. Write, compile, and share code instantly.<br><br>
+            <span class="kbd">Ctrl + Enter</span> to Run Code<br>
+            <span class="kbd">Ctrl + S</span> to Save Snapshot<br>
+            <span class="kbd">Main.java</span> must contain <code>public class Main</code>
+        </p>
+        <button class="btn btn-run" style="width: 100%; justify-content: center;" onclick="closeOnboarding()">GO TO EDITOR</button>
+    </div>
+</div>
+
+<div class="app-shell">
     <header>
-        <div class="logo">DUNSTONS-CODER <small style="font-size:9px; opacity:0.5">V11.0 PRO</small></div>
+        <div class="logo">
+            <i class="fa-solid fa-microchip"></i> DUNSTONS-CODER <small style="opacity: 0.4; font-weight: 400;">v12.0 PRO</small>
+        </div>
         <div class="toolbar">
-            <button class="btn" title="Create a shareable link" onclick="shareProject()"><i class="fa-solid fa-share-nodes"></i> SHARE</button>
-            <button class="btn" title="Download source" onclick="downloadProject()"><i class="fa-solid fa-download"></i> EXPORT</button>
-            <button class="btn" title="Toggle Light/Dark" onclick="toggleTheme()"><i class="fa-solid fa-circle-half-stroke"></i></button>
-            <button class="btn btn-run" title="Execute Code (Ctrl+Enter)" onclick="runProject()">RUN <i class="fa-solid fa-play"></i></button>
+            <button class="btn" title="Snapshot History" onclick="showHistory()"><i class="fa-solid fa-clock-rotate-left"></i></button>
+            <button class="btn" title="Share via URL" onclick="shareProject()"><i class="fa-solid fa-share-nodes"></i> SHARE</button>
+            <button class="btn" title="Export as Zip" onclick="exportZip()"><i class="fa-solid fa-file-zipper"></i> EXPORT</button>
+            <button class="btn" title="Toggle Theme" onclick="toggleTheme()"><i class="fa-solid fa-circle-half-stroke"></i></button>
+            <button class="btn btn-run" onclick="executeCurrent()"><i class="fa-solid fa-play"></i> RUN</button>
         </div>
     </header>
 
-    <div class="main-workspace">
+    <div class="main-view">
         <aside id="sidebar">
-            <div style="font-size:11px; font-weight:bold; margin-bottom:10px; opacity:0.6">FILES</div>
+            <div class="sidebar-section">
+                <div class="section-title">Project Files</div>
+                <button class="btn" style="width: 100%; justify-content: center;" onclick="createNewFile()">+ New File</button>
+            </div>
             <div id="file-list"></div>
-            <button class="btn" style="width:100%; margin-top:10px;" onclick="createNewFile()">+ New File</button>
-            
-            <div class="java-hint">
-                <strong>Pro Tip (Java):</strong><br>Always name your main class <code>Main</code> for the compiler to work.
+            <div class="sidebar-section" style="border-top: 1px solid var(--border); border-bottom: none;">
+                <div class="section-title">Instructions</div>
+                <div style="font-size: 11px; opacity: 0.6; line-height: 1.4;">
+                    Multi-file execution is supported. The compiler looks for the active tab to start.
+                </div>
             </div>
         </aside>
 
-        <div style="flex:1; display:flex; flex-direction:column;">
+        <section class="editor-stack">
             <div class="tabs-bar" id="tabs-bar"></div>
-            <div id="editor-target"></div>
-        </div>
-    </div>
-
-    <div id="console-container">
-        <div class="console-header">
-            <span>CONSOLE OUTPUT</span>
-            <span onclick="clearOutput()" style="cursor:pointer; opacity:0.5">CLEAR</span>
-        </div>
-        <div id="output-terminal">Ready. Select a file to begin coding...</div>
+            <div id="monaco-root"></div>
+            
+            <div id="console-root">
+                <div class="resizer-h" id="console-resizer"></div>
+                <div class="console-header">
+                    <span><i class="fa-solid fa-terminal"></i> OUTPUT & DEBUG</span>
+                    <div style="display: flex; gap: 15px;">
+                        <span id="exec-time" style="font-weight: 400; opacity: 0.5;"></span>
+                        <span onclick="clearOutput()" style="cursor: pointer; opacity: 0.7;">CLEAR</span>
+                    </div>
+                </div>
+                <div id="output">System initialized. Awaiting input...</div>
+            </div>
+        </section>
     </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
 <script>
-    let editor, files = {}, activeFile = 'index.html';
-    
-    // 5. STARTER TEMPLATES
+    let editor, files = {}, activeFile = '';
+    const API = "https://emkc.org/api/v2/piston/execute";
+
+    // 9. PROFESSIONAL TEST TEMPLATES
     const TEMPLATES = {
-        'index.html': { lang: 'html', content: '<h1>Hello Dunston!</h1>\n<p>Start your web project.</p>' },
-        'Main.java': { lang: 'java', content: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Java Engine Fixed!");\n    }\n}' },
-        'script.py': { lang: 'python', content: 'import math\nprint(f"PI is {math.pi}")\nprint("Python is ready.")' },
-        'logic.lua': { lang: 'lua', content: 'print("Hello from Lua!")' }
+        'index.html': { lang: 'html', content: '<!DOCTYPE html>\n<html>\n<head>\n<style>\n  body { background: #0d1117; color: #00ff41; font-family: sans-serif; text-align: center; padding-top: 50px; }\n  .box { border: 2px solid #00ff41; padding: 20px; display: inline-block; border-radius: 10px; }\n</style>\n</head>\n<body>\n  <div class="box">\n    <h1>Dunstons-Coder Web</h1>\n    <p id="time"></p>\n  </div>\n  <script>\n    document.getElementById("time").innerText = "Runtime: " + new Date().toLocaleTimeString();\n  <\/script>\n</body>\n</html>' },
+        'script.py': { lang: 'python', content: '# Python: Recursion & Logic\ndef fib(n):\n    return n if n <= 1 else fib(n-1) + fib(n-2)\n\nprint("Fibonacci Sequence:")\nfor i in range(10):\n    print(f"n={i}: {fib(i)}")' },
+        'Main.java': { lang: 'java', content: 'import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println("Java Streams Engine Active");\n        List<String> items = Arrays.asList("Apple", "Banana", "Cherry");\n        items.stream()\n             .filter(s -> s.startsWith("B"))\n             .forEach(System.out::println);\n    }\n}' },
+        'Logic.lua': { lang: 'lua', content: '-- Lua: Table Manipulation\nlocal students = {"Dunston", "Alice", "Bob"}\ntable.insert(students, "Charlie")\n\nfor i, name in ipairs(students) do\n    print(i .. ": " .. name)\nend' }
     };
 
-    // Initialize System
-    files = JSON.parse(localStorage.getItem('dc_files')) || TEMPLATES;
+    // Initialize File System
+    files = JSON.parse(localStorage.getItem('dc_v12_fs')) || TEMPLATES;
 
     require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.43.0/min/vs' }});
     require(['vs/editor/editor.main'], function() {
-        editor = monaco.editor.create(document.getElementById('editor-target'), {
+        editor = monaco.editor.create(document.getElementById('monaco-root'), {
             theme: 'vs-dark',
             automaticLayout: true,
-            fontSize: 14,
+            fontSize: 15,
+            fontFamily: 'Fira Code',
             minimap: { enabled: false },
-            padding: { top: 15 }
+            cursorSmoothCaretAnimation: "on",
+            bracketPairColorization: { enabled: true }
         });
 
-        // 6. KEYBOARD SHORTCUTS
-        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, runProject);
+        // Shortcuts
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, executeCurrent);
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+            saveState();
+            showStatus("Snapshot saved to Browser Storage.");
+        });
+
         editor.onDidChangeModelContent(() => {
-            files[activeFile].content = editor.getValue();
-            localStorage.setItem('dc_files', JSON.stringify(files));
+            if (activeFile) {
+                files[activeFile].content = editor.getValue();
+                saveState();
+            }
         });
 
-        renderTabs();
-        switchFile(Object.keys(files)[0]);
+        const lastFile = Object.keys(files)[0];
+        switchFile(lastFile);
+        renderFileList();
         checkURLShare();
     });
 
-    // 1. JAVA FIX & 7. SECURITY EXECUTION
-    async function runProject() {
-        const out = document.getElementById('output-terminal');
+    // 1. JAVA & MULTI-LANGUAGE ENGINE
+    async function executeCurrent() {
+        const out = document.getElementById('output');
         const file = files[activeFile];
-        out.innerHTML = `<span style="color:gray">> Building ${activeFile}...</span>\n`;
+        const start = performance.now();
+        
+        out.innerHTML = `<span style="color:#8b949e"># Compiling ${activeFile}...</span>\n`;
+        document.getElementById('exec-time').innerText = "";
 
         if (file.lang === 'html') {
-            const win = window.open();
-            win.document.write(file.content);
-            out.innerHTML += `> Web preview opened in new window.`;
+            const blob = new Blob([file.content], {type: 'text/html'});
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+            out.innerHTML += `> Rendered index.html in new tab.`;
             return;
         }
 
         try {
-            const res = await fetch('https://emkc.org/api/v2/piston/execute', {
+            const res = await fetch(API, {
                 method: 'POST',
                 body: JSON.stringify({
                     language: file.lang,
                     version: "*",
-                    files: [{ name: activeFile, content: file.content }]
+                    files: Object.keys(files).map(name => ({
+                        name: name,
+                        content: files[name].content
+                    }))
                 })
             });
             const data = await res.json();
-            const result = data.run.stdout || data.run.stderr || "Program finished with no output.";
-            out.innerHTML = `<span style="${data.run.stderr ? 'color:#ff6b6b' : ''}">${result}</span>`;
-        } catch (e) {
-            out.innerHTML = `<span style="color:red">Execution Error: System core unreachable.</span>`;
+            const elapsed = ((performance.now() - start) / 1000).toFixed(2);
+            
+            if (data.run) {
+                const combinedOutput = data.run.stdout + (data.run.stderr || "");
+                out.innerText = combinedOutput || "Program finished (no output).";
+                if (data.run.stderr) out.style.color = "var(--error)";
+                else out.style.color = "#d1d1d1";
+                document.getElementById('exec-time').innerText = `${elapsed}s`;
+            }
+        } catch (err) {
+            out.innerHTML = `<span style="color:var(--error)">Execution Failed: Backend unreachable.</span>`;
         }
     }
 
-    // 3. PROJECT MANAGEMENT
-    function renderTabs() {
-        const bar = document.getElementById('tabs-bar');
-        const list = document.getElementById('file-list');
-        bar.innerHTML = ''; list.innerHTML = '';
-        
-        Object.keys(files).forEach(name => {
-            // Render Tab
-            const tab = document.createElement('div');
-            tab.className = `tab ${name === activeFile ? 'active' : ''}`;
-            tab.innerHTML = `<span>${name}</span> <i class="fa-solid fa-xmark" style="font-size:10px" onclick="deleteFile('${name}')"></i>`;
-            tab.onclick = (e) => { if(e.target.tagName !== 'I') switchFile(name); };
-            bar.appendChild(tab);
-
-            // Render Sidebar List
-            const item = document.createElement('div');
-            item.style = `padding:5px; font-size:12px; cursor:pointer; color:${name === activeFile ? 'var(--accent)' : 'inherit'}`;
-            item.innerHTML = `<i class="fa-regular fa-file"></i> ${name}`;
-            item.onclick = () => switchFile(name);
-            list.appendChild(item);
-        });
-    }
-
+    // 3. PROJECT MGMT & UI
     function switchFile(name) {
         activeFile = name;
         editor.setValue(files[name].content);
-        const monacoLang = files[name].lang === 'java' ? 'java' : (files[name].lang === 'python' ? 'python' : 'html');
-        monaco.editor.setModelLanguage(editor.getModel(), monacoLang);
+        const lang = files[name].lang === 'html' ? 'html' : 
+                     files[name].lang === 'python' ? 'python' : 
+                     files[name].lang === 'java' ? 'java' : 'cpp';
+        monaco.editor.setModelLanguage(editor.getModel(), lang);
+        renderFileList();
         renderTabs();
     }
 
-    function createNewFile() {
-        const name = prompt("Filename (e.g. main.py, test.java):");
-        if (!name) return;
-        const ext = name.split('.').pop();
-        const langMap = { 'py': 'python', 'java': 'java', 'html': 'html', 'lua': 'lua', 'cpp': 'cpp' };
-        files[name] = { lang: langMap[ext] || 'text', content: '' };
-        switchFile(name);
+    function renderFileList() {
+        const container = document.getElementById('file-list');
+        container.innerHTML = '';
+        Object.keys(files).forEach(name => {
+            const div = document.createElement('div');
+            div.className = `file-item ${name === activeFile ? 'active' : ''}`;
+            const icon = name.endsWith('.html') ? 'fa-brands fa-html5' : 
+                         name.endsWith('.py') ? 'fa-brands fa-python' : 'fa-solid fa-file-code';
+            div.innerHTML = `<i class="${icon}"></i> ${name}`;
+            div.onclick = () => switchFile(name);
+            container.appendChild(div);
+        });
     }
 
-    // 8. ADVANCED FEATURES: SHARE VIA URL
+    function renderTabs() {
+        const bar = document.getElementById('tabs-bar');
+        bar.innerHTML = '';
+        Object.keys(files).forEach(name => {
+            const tab = document.createElement('div');
+            tab.className = `tab ${name === activeFile ? 'active' : ''}`;
+            tab.innerHTML = `${name} <i class="fa-solid fa-xmark" style="font-size:10px; opacity:0.5" onclick="deleteFile(event, '${name}')"></i>`;
+            tab.onclick = () => switchFile(name);
+            bar.appendChild(tab);
+        });
+    }
+
+    function createNewFile() {
+        const name = prompt("File name (e.g., test.py, Logic.cpp):");
+        if (name) {
+            const ext = name.split('.').pop();
+            const langMap = { 'py':'python', 'java':'java', 'html':'html', 'cpp':'cpp', 'lua':'lua' };
+            files[name] = { lang: langMap[ext] || 'text', content: '' };
+            switchFile(name);
+        }
+    }
+
+    function deleteFile(e, name) {
+        e.stopPropagation();
+        if (Object.keys(files).length > 1) {
+            delete files[name];
+            switchFile(Object.keys(files)[0]);
+        }
+    }
+
+    // 4. SHARING (Base64 URL)
     function shareProject() {
         const state = btoa(JSON.stringify(files));
-        const url = window.location.origin + window.location.pathname + "?code=" + state;
+        const url = window.location.origin + window.location.pathname + "?project=" + state;
         navigator.clipboard.writeText(url);
-        alert("Project link copied to clipboard! Anyone with this link can see your code.");
+        alert("Share link copied! Send this to your classmates.");
     }
 
     function checkURLShare() {
         const params = new URLSearchParams(window.location.search);
-        if (params.has('code')) {
+        if (params.has('project')) {
             try {
-                files = JSON.parse(atob(params.get('code')));
-                renderTabs();
+                files = JSON.parse(atob(params.get('project')));
                 switchFile(Object.keys(files)[0]);
-            } catch(e) { console.error("Invalid share link"); }
+            } catch(e) { console.error("Invalid share link."); }
         }
     }
 
-    function downloadProject() {
-        const blob = new Blob([editor.getValue()], {type: 'text/plain'});
+    // UI UTILS
+    function saveState() { localStorage.setItem('dc_v12_fs', JSON.stringify(files)); }
+    function closeOnboarding() { document.getElementById('onboarding').style.display = 'none'; }
+    function clearOutput() { document.getElementById('output').innerText = ''; }
+    function showStatus(msg) { document.getElementById('output').innerText = `# SYSTEM: ${msg}`; }
+    
+    function toggleTheme() {
+        document.body.classList.toggle('light-theme');
+        const isLight = document.body.classList.contains('light-theme');
+        monaco.editor.setTheme(isLight ? 'vs' : 'vs-dark');
+    }
+
+    // CONSOLE RESIZER
+    const resizer = document.getElementById('console-resizer');
+    const consoleRoot = document.getElementById('console-root');
+    resizer.addEventListener('mousedown', (e) => {
+        document.addEventListener('mousemove', resize);
+        document.addEventListener('mouseup', () => document.removeEventListener('mousemove', resize));
+    });
+
+    function resize(e) {
+        const h = window.innerHeight - e.clientY;
+        if (h > 100 && h < 600) consoleRoot.style.height = h + 'px';
+    }
+
+    function exportZip() {
+        alert("Exporting project as .txt bundle for local storage...");
+        const content = JSON.stringify(files, null, 2);
+        const blob = new Blob([content], {type: 'text/plain'});
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = activeFile;
+        a.download = "dunstons-project-v12.json";
         a.click();
     }
-
-    function toggleTheme() {
-        const current = editor._themeService._theme.themeName;
-        editor.updateOptions({ theme: current === 'vs-dark' ? 'vs' : 'vs-dark' });
-    }
-
-    function clearOutput() { document.getElementById('output-terminal').innerHTML = ''; }
 </script>
 </body>
 </html>
